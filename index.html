@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="icon" href="icon-192.png" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
@@ -49,15 +50,22 @@
   .home-sub{text-align:center; margin:3px 0 1px; color:var(--bone-dim); font-size:11.5px;}
   .net-worth{text-align:center; margin-bottom:16px; color:var(--brass); font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700;}
 
-  .panel-btn{width:100%; display:flex; align-items:center; gap:12px; background:var(--panel);
-    border:1px solid var(--panel-border); border-radius:14px; padding:12px 14px; margin-bottom:9px; text-align:left;}
+  .panel-btn{width:100%; display:flex; align-items:center; gap:10px; background:var(--panel);
+    border:1px solid var(--panel-border); border-radius:14px; padding:11px 12px; margin-bottom:8px; text-align:left;}
   .panel-btn:active{transform:scale(.99);}
-  .panel-icon{width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
-  .panel-icon svg{width:17px; height:17px;}
-  .panel-body{flex:1;}
-  .panel-title{font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:.03em;}
-  .panel-sub{color:var(--bone-dim); font-size:11.5px; margin-top:1px;}
-  .panel-value{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600;}
+  .panel-btn.sortable-ghost{opacity:.35;}
+  .panel-btn.sortable-chosen{background:#24262c;}
+  .panel-icon{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .panel-icon svg{width:16px; height:16px;}
+  .panel-body{flex:1; min-width:0;}
+  .panel-title{font-family:'Oswald',sans-serif; font-size:14.5px; letter-spacing:.03em;}
+  .panel-sub{color:var(--bone-dim); font-size:11px; margin-top:1px;}
+  .panel-value{font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:600; flex-shrink:0;}
+  .panel-grip{flex-shrink:0; opacity:.4;}
+  .panel-grip svg{width:15px; height:15px;}
+  .reorder-hint{text-align:center; font-size:11px; color:var(--bone-dim); margin-top:6px; opacity:.7;}
+
+  .section-label{font-size:11.5px; letter-spacing:.06em; color:var(--brass); font-weight:600; margin-bottom:8px;}
 
   .content{padding:0 20px 40px;}
   .ledger-fab{position:fixed; left:16px; bottom:calc(16px + env(safe-area-inset-bottom)); width:46px; height:46px;
@@ -166,7 +174,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], transactions:[], editing:null, filter:'all', expandedBudgets:{} };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], transactions:[], editing:null, filter:'all', expandedBudgets:{}, homeOrder:['safe','bank','liability','budget','subscription'] };
 
 function load(){
   try {
@@ -177,12 +185,17 @@ function load(){
     state.bankAccounts = data.bankAccounts || [];
     state.budgets = data.budgets || [];
     state.subscriptions = data.subscriptions || [];
+    state.liabilities = data.liabilities || [];
     state.transactions = data.transactions || [];
+    const defaultOrder = ['safe','bank','liability','budget','subscription'];
+    const savedOrder = Array.isArray(data.homeOrder) ? data.homeOrder.filter(k=>defaultOrder.includes(k)) : [];
+    state.homeOrder = [...savedOrder, ...defaultOrder.filter(k=>!savedOrder.includes(k))];
   } catch(e){
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
     state.budgets = [];
     state.subscriptions = [];
+    state.liabilities = [];
     state.transactions = [];
     save();
   }
@@ -192,7 +205,8 @@ function save(){
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
-      subscriptions: state.subscriptions, transactions: state.transactions
+      subscriptions: state.subscriptions, liabilities: state.liabilities, transactions: state.transactions,
+      homeOrder: state.homeOrder
     }));
     showSaved();
   } catch(e){
@@ -216,12 +230,20 @@ function getList(scope){
   if (scope==='bank') return state.bankAccounts;
   if (scope==='budget') return state.budgets;
   if (scope==='subscription') return state.subscriptions;
+  if (scope==='liability') return state.liabilities;
 }
 function scopeLabel(scope){
   if (scope==='safe') return 'Safe';
   if (scope==='bank') return 'Bank';
   if (scope==='budget') return 'Budget';
+  if (scope==='liability') return 'Liability';
   return 'Subscription';
+}
+function liabilitiesNet(){
+  return state.liabilities.reduce((s,i)=> s + (i.type==='owed' ? (Number(i.amount)||0) : -(Number(i.amount)||0)), 0);
+}
+function computeNetWorth(){
+  return computeTotal(state.safeItems) + computeTotal(state.bankAccounts) + liabilitiesNet();
 }
 
 function updateAmount(scope, id, newAmount){
@@ -234,15 +256,15 @@ function updateAmount(scope, id, newAmount){
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: ${item.name}`,
-      scope, delta, total: computeTotal(state.safeItems) + computeTotal(state.bankAccounts)
+      scope, delta, total: computeNetWorth()
     });
   }
   state.editing = null;
   save(); render();
 }
 
-function addItem(scope, name){
-  const item = {id: genId(), name, amount:0};
+function addItem(scope, name, extra={}){
+  const item = {id: genId(), name, amount:0, ...extra};
   getList(scope).push(item);
   save(); render();
 }
@@ -257,7 +279,7 @@ function removeItem(scope, id){
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: Removed ${item.name}`,
-      scope, delta: -item.amount, total: computeTotal(state.safeItems) + computeTotal(state.bankAccounts)
+      scope, delta: -item.amount, total: computeNetWorth()
     });
   }
   save(); render();
@@ -371,6 +393,8 @@ function iconSvg(name){
     repeat:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
     download:'<path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 21h14"/>',
     upload:'<path d="M12 21V9"/><polyline points="7 13 12 8 17 13"/><path d="M5 21h14"/>',
+    card:'<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+    grip:'<circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none"/>',
     back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
     plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     check:'<polyline points="20 6 9 17 4 12"/>',
@@ -390,8 +414,58 @@ function renderTopBar(title){
 function renderHome(){
   const safeTotal = computeTotal(state.safeItems);
   const bankTotal = computeTotal(state.bankAccounts);
-  const net = safeTotal + bankTotal;
   const subTotal = computeTotal(state.subscriptions);
+  const liabNet = liabilitiesNet();
+  const net = computeNetWorth();
+
+  const panelConfig = {
+    safe: `<button class="panel-btn" data-key="safe" onclick="navigate('safe')">
+        <div class="panel-icon" style="background:#3f7a5c22; color:#3f7a5c;">${iconSvg('lock')}</div>
+        <div class="panel-body">
+          <div class="panel-title">The Safe</div>
+          <div class="panel-sub">Physical cash &amp; coin</div>
+        </div>
+        <div class="panel-value">${fmt(safeTotal)}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`,
+    bank: `<button class="panel-btn" data-key="bank" onclick="navigate('bank')">
+        <div class="panel-icon" style="background:#3b556822; color:#3b5568;">${iconSvg('bank')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Bank Accounts</div>
+          <div class="panel-sub">Checking, savings &amp; more</div>
+        </div>
+        <div class="panel-value">${fmt(bankTotal)}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`,
+    liability: `<button class="panel-btn" data-key="liability" onclick="navigate('liability')">
+        <div class="panel-icon" style="background:#8a703822; color:#8a7038;">${iconSvg('card')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Liabilities</div>
+          <div class="panel-sub">What you owe &amp; are owed</div>
+        </div>
+        <div class="panel-value" style="color:${liabNet<0?'#a3483f':'inherit'}">${state.liabilities.length===0 ? 'None yet' : (liabNet>=0?'+':'-')+fmt(Math.abs(liabNet)).slice(1)}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`,
+    budget: `<button class="panel-btn" data-key="budget" onclick="navigate('budget')">
+        <div class="panel-icon" style="background:#6b4a7322; color:#6b4a73;">${iconSvg('target')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Budgets</div>
+          <div class="panel-sub">Savings goals &amp; targets</div>
+        </div>
+        <div class="panel-value">${state.budgets.length===0 ? 'None yet' : state.budgets.length+' active'}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`,
+    subscription: `<button class="panel-btn" data-key="subscription" onclick="navigate('subscription')">
+        <div class="panel-icon" style="background:#a3483f22; color:#a3483f;">${iconSvg('repeat')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Subscriptions</div>
+          <div class="panel-sub">Recurring monthly costs</div>
+        </div>
+        <div class="panel-value">${state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo'}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`
+  };
+
   return `
     <div class="content" style="padding-top:26px;">
       ${dialHTML(76)}
@@ -399,41 +473,10 @@ function renderHome(){
       <div class="home-sub">Net worth tracked</div>
       <div class="net-worth">${fmt(net)}</div>
 
-      <button class="panel-btn" onclick="navigate('safe')">
-        <div class="panel-icon" style="background:#3f7a5c22; color:#3f7a5c;">${iconSvg('lock')}</div>
-        <div class="panel-body">
-          <div class="panel-title">The Safe</div>
-          <div class="panel-sub">Physical cash &amp; coin</div>
-        </div>
-        <div class="panel-value">${fmt(safeTotal)}</div>
-      </button>
-
-      <button class="panel-btn" onclick="navigate('bank')">
-        <div class="panel-icon" style="background:#3b556822; color:#3b5568;">${iconSvg('bank')}</div>
-        <div class="panel-body">
-          <div class="panel-title">Bank Accounts</div>
-          <div class="panel-sub">Checking, savings &amp; more</div>
-        </div>
-        <div class="panel-value">${fmt(bankTotal)}</div>
-      </button>
-
-      <button class="panel-btn" onclick="navigate('budget')">
-        <div class="panel-icon" style="background:#6b4a7322; color:#6b4a73;">${iconSvg('target')}</div>
-        <div class="panel-body">
-          <div class="panel-title">Budgets</div>
-          <div class="panel-sub">Savings goals &amp; targets</div>
-        </div>
-        <div class="panel-value">${state.budgets.length===0 ? 'None yet' : state.budgets.length+' active'}</div>
-      </button>
-
-      <button class="panel-btn" onclick="navigate('subscription')">
-        <div class="panel-icon" style="background:#a3483f22; color:#a3483f;">${iconSvg('repeat')}</div>
-        <div class="panel-body">
-          <div class="panel-title">Subscriptions</div>
-          <div class="panel-sub">Recurring monthly costs</div>
-        </div>
-        <div class="panel-value">${state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo'}</div>
-      </button>
+      <div id="panelList">
+        ${state.homeOrder.map(k => panelConfig[k] || '').join('')}
+      </div>
+      <p class="reorder-hint">Hold and drag a category to reorder</p>
     </div>`;
 }
 
@@ -472,6 +515,31 @@ function renderBank(){
       ${state.bankAccounts.map((it,i)=>renderEditableRow('bank',it,i)).join('')}
       ${renderAddRow('bank','Add account')}
       <div class="total-bar"><span class="total-label">TOTAL IN BANK</span><span class="total-value">${fmt(total)}</span></div>
+    </div>`;
+}
+
+function renderLiabilities(){
+  const oweItems = state.liabilities.filter(i=>i.type==='owe');
+  const owedItems = state.liabilities.filter(i=>i.type==='owed');
+  const oweTotal = computeTotal(oweItems);
+  const owedTotal = computeTotal(owedItems);
+  const net = owedTotal - oweTotal;
+  return `${renderTopBar('LIABILITIES')}
+    <div class="content">
+      <div class="section-label">YOU OWE</div>
+      ${oweItems.length===0 ? `<p class="empty-note">No debts tracked.</p>` : oweItems.map((it,i)=>renderEditableRow('liability',it,i)).join('')}
+      ${renderAddLiabilityRow('owe','Add debt')}
+      <div class="total-bar"><span class="total-label">TOTAL YOU OWE</span><span class="total-value" style="color:#a3483f">${fmt(oweTotal)}</span></div>
+
+      <div class="section-label" style="margin-top:22px;">OWED TO YOU</div>
+      ${owedItems.length===0 ? `<p class="empty-note">Nothing tracked here.</p>` : owedItems.map((it,i)=>renderEditableRow('liability',it,i)).join('')}
+      ${renderAddLiabilityRow('owed','Add money owed to you')}
+      <div class="total-bar"><span class="total-label">TOTAL OWED TO YOU</span><span class="total-value" style="color:#3f7a5c">${fmt(owedTotal)}</span></div>
+
+      <div class="total-bar" style="margin-top:12px; border-top:2px solid var(--brass); padding-top:14px;">
+        <span class="total-label">NET LIABILITIES</span>
+        <span class="total-value" style="color:${net>=0?'#3f7a5c':'#a3483f'}">${net>=0?'+':'-'}${fmt(Math.abs(net)).slice(1)}</span>
+      </div>
     </div>`;
 }
 
@@ -654,6 +722,31 @@ function submitAdd(scope){
   if (name) addItem(scope, name); else render();
 }
 
+function renderAddLiabilityRow(type, label){
+  const key = 'liability-' + type;
+  return `<div id="addRow-${key}">
+    <button class="add-row" onclick="showAddLiabilityForm('${type}')">${iconSvg('plus')} ${label}</button>
+  </div>`;
+}
+
+function showAddLiabilityForm(type){
+  const key = 'liability-' + type;
+  const el = document.getElementById(`addRow-${key}`);
+  el.innerHTML = `<div class="add-form">
+    <input class="add-input" id="addInput-${key}" placeholder="Name" autofocus onkeydown="if(event.key==='Enter'){submitAddLiability('${type}')}" />
+    <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddLiability('${type}')">${iconSvg('check')}</button>
+    <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+  </div>`;
+  document.getElementById(`addInput-${key}`).focus();
+}
+
+function submitAddLiability(type){
+  const key = 'liability-' + type;
+  const input = document.getElementById(`addInput-${key}`);
+  const name = input.value.trim();
+  if (name) addItem('liability', name, {type}); else render();
+}
+
 function startEdit(scope, id, amount){
   state.editing = {scope, id, value:String(amount)};
   render();
@@ -679,8 +772,8 @@ function renderLedger(){
     ? `<p class="empty-note">Once you add or subtract money, your net worth over time shows up here.</p>`
     : `<div style="height:200px;"><canvas id="netChart"></canvas></div>`;
 
-  const filters = ['all','safe','bank','budget','subscription'].map(f => {
-    const label = f==='all'?'All':f==='safe'?'Safe':f==='bank'?'Bank':f==='budget'?'Budget':'Subs';
+  const filters = ['all','safe','bank','liability','budget','subscription'].map(f => {
+    const label = f==='all'?'All':f==='safe'?'Safe':f==='bank'?'Bank':f==='liability'?'Liability':f==='budget'?'Budget':'Subs';
     return `<button class="filter-chip${state.filter===f?' active':''}" onclick="state.filter='${f}'; render();">${label}</button>`;
   }).join('');
 
@@ -732,16 +825,33 @@ function drawChartIfNeeded(){
   });
 }
 
+let sortableInstance = null;
 function render(){
   const app = document.getElementById('app');
   if (state.page==='home') app.innerHTML = renderHome();
   else if (state.page==='safe') app.innerHTML = renderSafe();
   else if (state.page==='bank') app.innerHTML = renderBank();
+  else if (state.page==='liability') app.innerHTML = renderLiabilities();
   else if (state.page==='budget') app.innerHTML = renderBudget();
   else if (state.page==='subscription') app.innerHTML = renderSubscriptions();
   else if (state.page==='ledger') { app.innerHTML = renderLedger(); drawChartIfNeeded(); }
   const fab = document.getElementById('ledgerFab');
   if (fab) fab.style.display = state.page==='ledger' ? 'none' : 'flex';
+
+  if (sortableInstance){ sortableInstance.destroy(); sortableInstance = null; }
+  if (state.page==='home'){
+    const list = document.getElementById('panelList');
+    if (list && typeof Sortable !== 'undefined'){
+      sortableInstance = new Sortable(list, {
+        animation:150,
+        delay:250, delayOnTouchOnly:true, touchStartThreshold:6,
+        onEnd: () => {
+          state.homeOrder = Array.from(list.children).map(el=>el.dataset.key);
+          save();
+        }
+      });
+    }
+  }
 }
 
 /* ---------- init ---------- */
