@@ -116,6 +116,9 @@
   .sub-row{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:12px;}
   .sub-row-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
   .sub-due{font-size:12px; color:var(--bone-dim);}
+  .backup-bar{display:flex; justify-content:center; gap:24px; margin-top:20px; padding-top:16px; border-top:1px solid var(--divider);}
+  .backup-link{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--bone-dim);}
+  .backup-link svg{width:14px; height:14px;}
 
   .filters{display:flex; gap:8px; margin-bottom:16px;}
   .filter-chip{padding:6px 16px; border-radius:999px; font-size:14px; border:1px solid var(--panel-border); color:var(--bone-dim);}
@@ -306,6 +309,42 @@ function addSubscription(name, amount, dueDate){
   save(); render();
 }
 
+/* ---------- backup / restore ---------- */
+function exportBackup(){
+  const data = {
+    safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
+    subscriptions: state.subscriptions, transactions: state.transactions, exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vault-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file){
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!confirm('This will replace everything currently in the app with this backup. Continue?')) return;
+      state.safeItems = data.safeItems || [];
+      state.bankAccounts = data.bankAccounts || [];
+      state.budgets = data.budgets || [];
+      state.subscriptions = data.subscriptions || [];
+      state.transactions = data.transactions || [];
+      save(); render();
+      alert('Backup restored.');
+    } catch(err){
+      alert("That file couldn't be read — make sure it's a backup exported from this app.");
+    }
+  };
+  reader.readAsText(file);
+}
+
 /* ---------- render ---------- */
 function navigate(page){ state.page = page; state.editing = null; render(); window.scrollTo(0,0); }
 
@@ -330,6 +369,8 @@ function iconSvg(name){
     trend:'<polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/>',
     target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
     repeat:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+    download:'<path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 21h14"/>',
+    upload:'<path d="M12 21V9"/><polyline points="7 13 12 8 17 13"/><path d="M5 21h14"/>',
     back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
     plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     check:'<polyline points="20 6 9 17 4 12"/>',
@@ -661,6 +702,11 @@ function renderLedger(){
       <div class="chart-card">${chartArea}</div>
       <div class="filters">${filters}</div>
       ${txList}
+      <div class="backup-bar">
+        <button class="backup-link" onclick="exportBackup()">${iconSvg('download')} Backup data</button>
+        <button class="backup-link" onclick="document.getElementById('restoreFile').click()">${iconSvg('upload')} Restore</button>
+        <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="importBackup(this.files[0])" />
+      </div>
     </div>`;
 }
 
