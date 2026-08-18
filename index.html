@@ -22,17 +22,17 @@
     --ledger-green:#3f7a5c; --steel:#3b5568; --rust:#a3483f; --olive:#736e30; --plum:#6b4a73;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0; background:var(--bg); min-height:100vh; min-height:100dvh; overscroll-behavior-y:none;}
+  html,body{margin:0; padding:0; background:var(--bg); height:100vh; height:calc(var(--vh, 1vh) * 100); overflow:hidden; overscroll-behavior:none; position:fixed; inset:0; width:100%;}
   body{font-family:'Inter',sans-serif; color:var(--bone); padding-bottom:env(safe-area-inset-bottom);}
   button{font-family:inherit; background:none; border:none; cursor:pointer; color:inherit; padding:0;}
   input{font-family:inherit;}
-  #app{max-width:520px; margin:0 auto; min-height:100vh; min-height:100dvh;}
+  #app{max-width:520px; margin:0 auto; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch;}
 
-  .topbar{display:flex; align-items:center; gap:12px; padding:28px 20px 16px;}
+  .topbar{display:flex; align-items:center; gap:12px; padding:22px 20px 12px;}
   .back-btn{color:var(--brass); padding:6px; border-radius:999px; display:flex;}
-  .page-title{font-family:'Oswald',sans-serif; font-size:24px; font-weight:500; letter-spacing:.04em; margin:0;}
+  .page-title{font-family:'Oswald',sans-serif; font-size:22px; font-weight:500; letter-spacing:.04em; margin:0;}
 
-  .dial-wrap{width:120px; height:120px; margin:0 auto; position:relative;}
+  .dial-wrap{width:76px; height:76px; margin:0 auto 6px; position:relative;}
   .dial{width:100%; height:100%; border-radius:50%; border:3px solid var(--brass-dim);
     background:radial-gradient(circle at 35% 30%, #2a2d33, var(--bg) 70%);
     box-shadow:inset 0 0 20px rgba(0,0,0,.6), 0 0 0 6px var(--bg);
@@ -45,20 +45,25 @@
     background:linear-gradient(145deg, var(--brass), var(--brass-dim));
     box-shadow:0 2px 6px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;}
 
-  .home-title{text-align:center; margin-top:16px; font-family:'Oswald',sans-serif; font-size:30px; font-weight:600; letter-spacing:.08em;}
-  .home-sub{text-align:center; margin:4px 0 2px; color:var(--bone-dim); font-size:13px;}
-  .net-worth{text-align:center; margin-bottom:30px; color:var(--brass); font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:700;}
+  .home-title{text-align:center; margin-top:14px; font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; letter-spacing:.08em;}
+  .home-sub{text-align:center; margin:3px 0 1px; color:var(--bone-dim); font-size:11.5px;}
+  .net-worth{text-align:center; margin-bottom:16px; color:var(--brass); font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700;}
 
-  .panel-btn{width:100%; display:flex; align-items:center; gap:14px; background:var(--panel);
-    border:1px solid var(--panel-border); border-radius:16px; padding:18px; margin-bottom:14px; text-align:left;}
+  .panel-btn{width:100%; display:flex; align-items:center; gap:12px; background:var(--panel);
+    border:1px solid var(--panel-border); border-radius:14px; padding:12px 14px; margin-bottom:9px; text-align:left;}
   .panel-btn:active{transform:scale(.99);}
-  .panel-icon{width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .panel-icon{width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .panel-icon svg{width:17px; height:17px;}
   .panel-body{flex:1;}
-  .panel-title{font-family:'Oswald',sans-serif; font-size:17px; letter-spacing:.03em;}
-  .panel-sub{color:var(--bone-dim); font-size:12.5px; margin-top:2px;}
-  .panel-value{font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:600;}
+  .panel-title{font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:.03em;}
+  .panel-sub{color:var(--bone-dim); font-size:11.5px; margin-top:1px;}
+  .panel-value{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600;}
 
   .content{padding:0 20px 40px;}
+  .ledger-fab{position:fixed; left:16px; bottom:calc(16px + env(safe-area-inset-bottom)); width:46px; height:46px;
+    border-radius:50%; background:var(--panel); border:1px solid var(--panel-border); color:var(--brass);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,.4); z-index:40;}
+  .ledger-fab:active{transform:scale(.94);}
 
   .row{display:flex; align-items:center; justify-content:space-between; background:var(--panel);
     border-radius:16px; padding:16px 20px; margin-bottom:12px;}
@@ -83,6 +88,35 @@
   .chart-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:16px; margin-bottom:20px;}
   .empty-note{text-align:center; padding:24px 10px; color:var(--bone-dim); font-size:13.5px;}
 
+  .budget-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:12px;}
+  .budget-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; gap:10px;}
+  .budget-head-left{display:flex; align-items:center; gap:8px; min-width:0;}
+  .expand-btn{color:var(--bone-dim); flex-shrink:0; transition:transform .2s ease;}
+  .expand-btn.open{transform:rotate(180deg); color:var(--brass);}
+  .progress-track{height:7px; background:var(--panel-border); border-radius:999px; overflow:hidden; margin-bottom:6px;}
+  .progress-fill{height:100%; border-radius:999px; transition:width .3s ease;}
+  .budget-meta{display:flex; justify-content:space-between; font-size:12px; color:var(--bone-dim); gap:8px;}
+  .budget-details{margin-top:10px; padding-top:10px; border-top:1px solid var(--divider);}
+  .budget-suggest{font-size:13.5px; color:var(--bone); margin-bottom:10px;}
+  .budget-suggest.achieved{color:#3f7a5c; font-weight:600;}
+  .budget-form{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px; margin-bottom:12px; display:flex; flex-direction:column; gap:8px;}
+  .budget-form-row{display:flex; gap:8px;}
+  .budget-form-row .add-input{flex:1; min-width:0;}
+  .budget-form-actions{display:flex; justify-content:flex-end; gap:14px; padding-top:2px;}
+  input[type=date].add-input, select.add-input{color-scheme:dark;}
+
+  .bubble-label{font-size:11.5px; color:var(--bone-dim); margin-bottom:6px;}
+  .bubble-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .bubble{width:30px; height:30px; border-radius:50%; border:1.5px solid var(--brass-dim); color:var(--brass);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; flex-shrink:0;}
+  .bubble:active{transform:scale(.92);}
+  .bubble.next{background:var(--brass); color:var(--bg); border-color:var(--brass);}
+  .bubble-done-note{font-size:12px; color:#3f7a5c; font-weight:600;}
+
+  .sub-row{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:12px;}
+  .sub-row-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .sub-due{font-size:12px; color:var(--bone-dim);}
+
   .filters{display:flex; gap:8px; margin-bottom:16px;}
   .filter-chip{padding:6px 16px; border-radius:999px; font-size:14px; border:1px solid var(--panel-border); color:var(--bone-dim);}
   .filter-chip.active{background:var(--brass); color:var(--bg); border-color:var(--brass);}
@@ -100,8 +134,17 @@
 </head>
 <body>
 <div id="app"></div>
+<button class="ledger-fab" id="ledgerFab" onclick="navigate('ledger')" aria-label="Open Ledger">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+</button>
 <div class="save-toast" id="saveToast">Saved</div>
 
+<script>
+function setVH(){ document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px'); }
+setVH();
+window.addEventListener('resize', setVH);
+window.addEventListener('orientationchange', setVH);
+</script>
 <script>
 /* ---------- palette / helpers ---------- */
 const ROW_COLORS = ['#3f7a5c','#3b5568','#736e30','#a3483f','#6b4a73','#8a7038'];
@@ -120,7 +163,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], transactions:[], editing:null, filter:'all' };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], transactions:[], editing:null, filter:'all', expandedBudgets:{} };
 
 function load(){
   try {
@@ -129,10 +172,14 @@ function load(){
     const data = JSON.parse(raw);
     state.safeItems = data.safeItems || [];
     state.bankAccounts = data.bankAccounts || [];
+    state.budgets = data.budgets || [];
+    state.subscriptions = data.subscriptions || [];
     state.transactions = data.transactions || [];
   } catch(e){
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
+    state.budgets = [];
+    state.subscriptions = [];
     state.transactions = [];
     save();
   }
@@ -141,7 +188,8 @@ function load(){
 function save(){
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      safeItems: state.safeItems, bankAccounts: state.bankAccounts, transactions: state.transactions
+      safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
+      subscriptions: state.subscriptions, transactions: state.transactions
     }));
     showSaved();
   } catch(e){
@@ -160,8 +208,21 @@ function showSaved(){
 }
 
 /* ---------- mutations ---------- */
+function getList(scope){
+  if (scope==='safe') return state.safeItems;
+  if (scope==='bank') return state.bankAccounts;
+  if (scope==='budget') return state.budgets;
+  if (scope==='subscription') return state.subscriptions;
+}
+function scopeLabel(scope){
+  if (scope==='safe') return 'Safe';
+  if (scope==='bank') return 'Bank';
+  if (scope==='budget') return 'Budget';
+  return 'Subscription';
+}
+
 function updateAmount(scope, id, newAmount){
-  const list = scope==='safe' ? state.safeItems : state.bankAccounts;
+  const list = getList(scope);
   const item = list.find(i=>i.id===id);
   if (!item) return;
   const delta = newAmount - item.amount;
@@ -169,7 +230,7 @@ function updateAmount(scope, id, newAmount){
   if (delta !== 0){
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
-      location: `${scope==='safe'?'Safe':'Bank'}: ${item.name}`,
+      location: `${scopeLabel(scope)}: ${item.name}`,
       scope, delta, total: computeTotal(state.safeItems) + computeTotal(state.bankAccounts)
     });
   }
@@ -179,12 +240,12 @@ function updateAmount(scope, id, newAmount){
 
 function addItem(scope, name){
   const item = {id: genId(), name, amount:0};
-  (scope==='safe' ? state.safeItems : state.bankAccounts).push(item);
+  getList(scope).push(item);
   save(); render();
 }
 
 function removeItem(scope, id){
-  const list = scope==='safe' ? state.safeItems : state.bankAccounts;
+  const list = getList(scope);
   const idx = list.findIndex(i=>i.id===id);
   if (idx===-1) return;
   const item = list[idx];
@@ -192,10 +253,56 @@ function removeItem(scope, id){
   if (item.amount !== 0){
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
-      location: `${scope==='safe'?'Safe':'Bank'}: Removed ${item.name}`,
+      location: `${scopeLabel(scope)}: Removed ${item.name}`,
       scope, delta: -item.amount, total: computeTotal(state.safeItems) + computeTotal(state.bankAccounts)
     });
   }
+  save(); render();
+}
+
+/* ---------- budgets ---------- */
+function periodsUntil(fromDate, deadline, timeframe){
+  const start = new Date(fromDate); start.setHours(0,0,0,0);
+  const end = new Date(deadline + 'T00:00:00');
+  const days = Math.ceil((end - start) / 86400000);
+  if (days <= 0) return 0;
+  return timeframe === 'weekly' ? Math.max(1, Math.ceil(days/7)) : Math.max(1, Math.ceil(days/30.44));
+}
+
+function addBudget(name, target, deadline, timeframe){
+  const createdAt = new Date().toISOString().slice(0,10);
+  const totalPeriods = Math.max(1, periodsUntil(createdAt, deadline, timeframe));
+  const installment = target / totalPeriods;
+  state.budgets.push({id: genId(), name, amount:0, target, deadline, timeframe, createdAt, totalPeriods, installment, paidThrough:0});
+  save(); render();
+}
+
+function toggleBudgetExpand(id){
+  state.expandedBudgets[id] = !state.expandedBudgets[id];
+  render();
+}
+
+function periodLabel(b, n){
+  if (b.timeframe === 'weekly'){
+    const d = new Date(b.createdAt + 'T00:00:00');
+    d.setDate(d.getDate() + (n-1)*7);
+    return d.toLocaleDateString(undefined,{month:'numeric', day:'numeric'});
+  }
+  const d = new Date(b.createdAt + 'T00:00:00');
+  d.setMonth(d.getMonth() + (n-1));
+  return d.toLocaleDateString(undefined,{month:'short'});
+}
+
+function markBudgetPeriod(id, n){
+  const b = state.budgets.find(x=>x.id===id);
+  if (!b) return;
+  b.paidThrough = n;
+  save(); render();
+}
+
+/* ---------- subscriptions ---------- */
+function addSubscription(name, amount, dueDate){
+  state.subscriptions.push({id: genId(), name, amount, dueDate});
   save(); render();
 }
 
@@ -221,6 +328,8 @@ function iconSvg(name){
     lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     bank:'<path d="M3 21h18"/><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
     trend:'<polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+    repeat:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
     back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
     plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     check:'<polyline points="20 6 9 17 4 12"/>',
@@ -241,9 +350,10 @@ function renderHome(){
   const safeTotal = computeTotal(state.safeItems);
   const bankTotal = computeTotal(state.bankAccounts);
   const net = safeTotal + bankTotal;
+  const subTotal = computeTotal(state.subscriptions);
   return `
-    <div class="content" style="padding-top:32px;">
-      ${dialHTML(120)}
+    <div class="content" style="padding-top:26px;">
+      ${dialHTML(76)}
       <div class="home-title">THE VAULT</div>
       <div class="home-sub">Net worth tracked</div>
       <div class="net-worth">${fmt(net)}</div>
@@ -266,12 +376,22 @@ function renderHome(){
         <div class="panel-value">${fmt(bankTotal)}</div>
       </button>
 
-      <button class="panel-btn" onclick="navigate('ledger')">
-        <div class="panel-icon" style="background:#c9a24b22; color:#c9a24b;">${iconSvg('trend')}</div>
+      <button class="panel-btn" onclick="navigate('budget')">
+        <div class="panel-icon" style="background:#6b4a7322; color:#6b4a73;">${iconSvg('target')}</div>
         <div class="panel-body">
-          <div class="panel-title">The Ledger</div>
-          <div class="panel-sub">History of every change</div>
+          <div class="panel-title">Budgets</div>
+          <div class="panel-sub">Savings goals &amp; targets</div>
         </div>
+        <div class="panel-value">${state.budgets.length===0 ? 'None yet' : state.budgets.length+' active'}</div>
+      </button>
+
+      <button class="panel-btn" onclick="navigate('subscription')">
+        <div class="panel-icon" style="background:#a3483f22; color:#a3483f;">${iconSvg('repeat')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Subscriptions</div>
+          <div class="panel-sub">Recurring monthly costs</div>
+        </div>
+        <div class="panel-value">${state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo'}</div>
       </button>
     </div>`;
 }
@@ -312,6 +432,163 @@ function renderBank(){
       ${renderAddRow('bank','Add account')}
       <div class="total-bar"><span class="total-label">TOTAL IN BANK</span><span class="total-value">${fmt(total)}</span></div>
     </div>`;
+}
+
+function renderBudgetCard(b, idx){
+  const color = ROW_COLORS[idx % ROW_COLORS.length];
+  const pct = b.target>0 ? Math.min(100, Math.round((b.amount/b.target)*100)) : 0;
+  const remaining = Math.max(0, b.target - b.amount);
+  const achieved = b.target>0 && b.amount >= b.target;
+  const isEditing = state.editing && state.editing.scope==='budget' && state.editing.id===b.id;
+  const isOpen = !!state.expandedBudgets[b.id];
+  const dateLabel = new Date(b.deadline+'T00:00:00').toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
+  const periodWord = b.timeframe==='weekly' ? 'week' : 'month';
+
+  const savedControl = isEditing ? `
+      <input class="row-input" id="edit-input" inputmode="decimal" value="${state.editing.value}" onkeydown="if(event.key==='Enter'){commitEdit('budget','${b.id}')}" oninput="state.editing.value=this.value" />
+      <button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('budget','${b.id}')">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null; render();">${iconSvg('x')}</button>
+      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('budget','${b.id}')">${iconSvg('trash')}</button>
+    ` : `<button class="row-amount" onclick="startEdit('budget','${b.id}', ${b.amount})">${fmt(b.amount)}</button>`;
+
+  const suggestLine = achieved
+    ? `<div class="budget-suggest achieved">Goal reached</div>`
+    : `<div class="budget-suggest">Save <b>${fmt(b.installment)}</b> / ${periodWord} to hit your goal — this amount is fixed and won't change</div>`;
+
+  const totalPeriods = b.totalPeriods || 1;
+  const visibleBubbles = [];
+  for (let n = b.paidThrough + 1; n <= totalPeriods; n++) visibleBubbles.push(n);
+  const bubbleRow = visibleBubbles.length === 0
+    ? `<div class="bubble-done-note">All ${periodWord}s checked off</div>`
+    : `<div class="bubble-row">${visibleBubbles.map(n => `<button class="bubble${n===b.paidThrough+1?' next':''}" onclick="markBudgetPeriod('${b.id}',${n})" title="Mark ${periodLabel(b,n)} as saved">${periodLabel(b,n)}</button>`).join('')}</div>`;
+
+  const details = isOpen ? `
+    <div class="budget-details">
+      ${suggestLine}
+      <div class="bubble-label">Tap the ${periodWord} you've saved for — earlier ones clear automatically</div>
+      ${bubbleRow}
+    </div>` : '';
+
+  return `<div class="budget-card" style="border-left:4px solid ${color}">
+    <div class="budget-head">
+      <div class="budget-head-left">
+        <button class="expand-btn${isOpen?' open':''}" onclick="toggleBudgetExpand('${b.id}')" aria-label="Toggle details">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <span class="row-label">${escapeHtml(b.name)}</span>
+      </div>
+      <div class="row-actions">${savedControl}</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%; background:${achieved?'#3f7a5c':'var(--brass)'}"></div></div>
+    <div class="budget-meta"><span>${fmt(b.amount)} of ${fmt(b.target)} · ${pct}%</span><span>by ${dateLabel}</span></div>
+    ${details}
+  </div>`;
+}
+
+function renderBudget(){
+  const empty = state.budgets.length===0 ? `<p class="empty-note">No budgets yet. Set a savings goal and a target date to get started.</p>` : '';
+  return `${renderTopBar('BUDGETS')}
+    <div class="content">
+      ${empty}
+      ${state.budgets.map((b,i)=>renderBudgetCard(b,i)).join('')}
+      <div id="addRow-budget">
+        <button class="add-row" onclick="showAddBudgetForm()">${iconSvg('plus')} Add budget</button>
+      </div>
+    </div>`;
+}
+
+function renderSubRow(s, idx){
+  const color = ROW_COLORS[idx % ROW_COLORS.length];
+  const isEditing = state.editing && state.editing.scope==='subscription' && state.editing.id===s.id;
+  const dateLabel = new Date(s.dueDate+'T00:00:00').toLocaleDateString(undefined,{month:'short', day:'numeric'});
+  const actions = isEditing ? `
+      <input class="row-input" id="edit-input" inputmode="decimal" value="${state.editing.value}" onkeydown="if(event.key==='Enter'){commitEdit('subscription','${s.id}')}" oninput="state.editing.value=this.value" />
+      <button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('subscription','${s.id}')">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null; render();">${iconSvg('x')}</button>
+      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('subscription','${s.id}')">${iconSvg('trash')}</button>
+    ` : `<button class="row-amount" onclick="startEdit('subscription','${s.id}', ${s.amount})">${fmt(s.amount)}</button>`;
+
+  return `<div class="sub-row" style="border-left:4px solid ${color}">
+    <div class="sub-row-top">
+      <span class="row-label">${escapeHtml(s.name)}</span>
+      <div class="row-actions">${actions}</div>
+    </div>
+    <div class="sub-due">Due ${dateLabel}</div>
+  </div>`;
+}
+
+function renderSubscriptions(){
+  const total = computeTotal(state.subscriptions);
+  const empty = state.subscriptions.length===0 ? `<p class="empty-note">No subscriptions yet. Add one to track recurring costs.</p>` : '';
+  return `${renderTopBar('SUBSCRIPTIONS')}
+    <div class="content">
+      ${empty}
+      ${state.subscriptions.map((s,i)=>renderSubRow(s,i)).join('')}
+      <div id="addRow-subscription">
+        <button class="add-row" onclick="showAddSubscriptionForm()">${iconSvg('plus')} Add subscription</button>
+      </div>
+      <div class="total-bar"><span class="total-label">TOTAL PER MONTH</span><span class="total-value">${fmt(total)}</span></div>
+    </div>`;
+}
+
+function showAddSubscriptionForm(){
+  const el = document.getElementById('addRow-subscription');
+  el.innerHTML = `<div class="budget-form">
+    <input class="add-input" id="subName" placeholder="Subscription name" />
+    <div class="budget-form-row">
+      <input class="add-input" id="subAmount" placeholder="Amount" inputmode="decimal" />
+      <input class="add-input" id="subDate" type="date" />
+    </div>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddSubscription()">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+  document.getElementById('subName').focus();
+}
+
+function submitAddSubscription(){
+  const name = document.getElementById('subName').value.trim();
+  const amount = parseFloat(document.getElementById('subAmount').value);
+  const dueDate = document.getElementById('subDate').value;
+  if (!name || isNaN(amount) || amount<=0 || !dueDate){
+    alert('Please enter a name, an amount above $0, and a due date.');
+    return;
+  }
+  addSubscription(name, amount, dueDate);
+}
+
+function showAddBudgetForm(){
+  const el = document.getElementById('addRow-budget');
+  const todayStr = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="budget-form">
+    <input class="add-input" id="budgetName" placeholder="What are you saving for?" />
+    <input class="add-input" id="budgetTarget" placeholder="Target amount" inputmode="decimal" />
+    <div class="budget-form-row">
+      <input class="add-input" id="budgetDate" type="date" min="${todayStr}" />
+      <select class="add-input" id="budgetTimeframe">
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddBudget()">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+  document.getElementById('budgetName').focus();
+}
+
+function submitAddBudget(){
+  const name = document.getElementById('budgetName').value.trim();
+  const target = parseFloat(document.getElementById('budgetTarget').value);
+  const deadline = document.getElementById('budgetDate').value;
+  const timeframe = document.getElementById('budgetTimeframe').value;
+  if (!name || isNaN(target) || target<=0 || !deadline){
+    alert('Please enter a name, a target amount above $0, and a target date.');
+    return;
+  }
+  addBudget(name, target, deadline, timeframe);
 }
 
 function renderAddRow(scope, placeholder){
@@ -361,8 +638,8 @@ function renderLedger(){
     ? `<p class="empty-note">Once you add or subtract money, your net worth over time shows up here.</p>`
     : `<div style="height:200px;"><canvas id="netChart"></canvas></div>`;
 
-  const filters = ['all','safe','bank'].map(f => {
-    const label = f==='all'?'All':f==='safe'?'Safe':'Bank';
+  const filters = ['all','safe','bank','budget','subscription'].map(f => {
+    const label = f==='all'?'All':f==='safe'?'Safe':f==='bank'?'Bank':f==='budget'?'Budget':'Subs';
     return `<button class="filter-chip${state.filter===f?' active':''}" onclick="state.filter='${f}'; render();">${label}</button>`;
   }).join('');
 
@@ -414,7 +691,11 @@ function render(){
   if (state.page==='home') app.innerHTML = renderHome();
   else if (state.page==='safe') app.innerHTML = renderSafe();
   else if (state.page==='bank') app.innerHTML = renderBank();
+  else if (state.page==='budget') app.innerHTML = renderBudget();
+  else if (state.page==='subscription') app.innerHTML = renderSubscriptions();
   else if (state.page==='ledger') { app.innerHTML = renderLedger(); drawChartIfNeeded(); }
+  const fab = document.getElementById('ledgerFab');
+  if (fab) fab.style.display = state.page==='ledger' ? 'none' : 'flex';
 }
 
 /* ---------- init ---------- */
