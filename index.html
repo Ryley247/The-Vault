@@ -174,7 +174,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], transactions:[], editing:null, filter:'all', expandedBudgets:{}, homeOrder:['safe','bank','liability','budget','subscription'] };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, filter:'all', expandedBudgets:{}, expandedWeeks:{}, expandedJobs:{}, homeOrder:['safe','bank','liability','budget','subscription','income'] };
 
 function load(){
   try {
@@ -186,8 +186,12 @@ function load(){
     state.budgets = data.budgets || [];
     state.subscriptions = data.subscriptions || [];
     state.liabilities = data.liabilities || [];
+    state.jobs = (data.jobs || []).map(j => ({
+      id: j.id, name: j.name, weeklyRate: j.weeklyRate || 0, payDays: j.payDays || [],
+      workedDates: j.workedDates || [], paidWeeks: j.paidWeeks || {}
+    }));
     state.transactions = data.transactions || [];
-    const defaultOrder = ['safe','bank','liability','budget','subscription'];
+    const defaultOrder = ['safe','bank','liability','budget','subscription','income'];
     const savedOrder = Array.isArray(data.homeOrder) ? data.homeOrder.filter(k=>defaultOrder.includes(k)) : [];
     state.homeOrder = [...savedOrder, ...defaultOrder.filter(k=>!savedOrder.includes(k))];
   } catch(e){
@@ -196,6 +200,7 @@ function load(){
     state.budgets = [];
     state.subscriptions = [];
     state.liabilities = [];
+    state.jobs = [];
     state.transactions = [];
     save();
   }
@@ -205,8 +210,8 @@ function save(){
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
-      subscriptions: state.subscriptions, liabilities: state.liabilities, transactions: state.transactions,
-      homeOrder: state.homeOrder
+      subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
+      transactions: state.transactions, homeOrder: state.homeOrder
     }));
     showSaved();
   } catch(e){
@@ -325,6 +330,170 @@ function markBudgetPeriod(id, n){
   save(); render();
 }
 
+/* ---------- jobs / income ---------- */
+function addJob(name, weeklyRate, payDays){
+  state.jobs.push({id: genId(), name, weeklyRate, payDays, workedDates: [], paidWeeks: {}});
+  save(); render();
+}
+
+function updateJob(id, patch){
+  const j = state.jobs.find(x=>x.id===id);
+  if (!j) return;
+  Object.assign(j, patch);
+  save(); render();
+}
+
+function removeJob(id){
+  const idx = state.jobs.findIndex(x=>x.id===id);
+  if (idx===-1) return;
+  state.jobs.splice(idx,1);
+  save(); render();
+}
+
+function toggleJobExpand(id){
+  state.expandedJobs[id] = !state.expandedJobs[id];
+  render();
+}
+
+function addWorkedDay(jobId, dateStr){
+  const j = state.jobs.find(x=>x.id===jobId);
+  if (!j || !dateStr) return;
+  if (!j.workedDates.includes(dateStr)) j.workedDates.push(dateStr);
+  j.workedDates.sort();
+  save(); render();
+}
+
+function addWorkedDayRange(jobId, fromStr, toStr){
+  const j = state.jobs.find(x=>x.id===jobId);
+  if (!j || !fromStr) return;
+  const to = toStr || fromStr;
+  let start = fromStr, end = to;
+  if (new Date(start) > new Date(end)) { [start, end] = [end, start]; }
+  let cur = new Date(start + 'T00:00:00');
+  const last = new Date(end + 'T00:00:00');
+  while (cur <= last){
+    const iso = cur.toISOString().slice(0,10);
+    if (!j.workedDates.includes(iso)) j.workedDates.push(iso);
+    cur.setDate(cur.getDate() + 1);
+  }
+  j.workedDates.sort();
+  save(); render();
+}
+
+function removeWorkedDay(jobId, dateStr){
+  const j = state.jobs.find(x=>x.id===jobId);
+  if (!j) return;
+  j.workedDates = j.workedDates.filter(d=>d!==dateStr);
+  save(); render();
+}
+
+function toggleWeekPaid(jobId, weekStart){
+  const j = state.jobs.find(x=>x.id===jobId);
+  if (!j) return;
+  j.paidWeeks[weekStart] = !j.paidWeeks[weekStart];
+  save(); render();
+}
+
+function toggleWeekExpand(jobId, weekStart){
+  const key = jobId + ':' + weekStart;
+  state.expandedWeeks[key] = !state.expandedWeeks[key];
+  render();
+}
+
+/* ---------- date/week helpers ---------- */
+function getWeekStart(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().slice(0,10);
+}
+
+function formatShortDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined,{month:'short', day:'numeric'});
+}
+
+function formatRange(s, e){
+  const sd = new Date(s + 'T00:00:00'), ed = new Date(e + 'T00:00:00');
+  const sMonth = sd.toLocaleDateString(undefined,{month:'short'});
+  const eMonth = ed.toLocaleDateString(undefined,{month:'short'});
+  if (s === e) return `${sMonth} ${sd.getDate()}`;
+  if (sMonth === eMonth) return `${sMonth} ${sd.getDate()}\u2013${ed.getDate()}`;
+  return `${sMonth} ${sd.getDate()} \u2013 ${eMonth} ${ed.getDate()}`;
+}
+
+function compactDateRanges(dates){
+  if (!dates.length) return '';
+  const sorted = [...dates].sort();
+  const ranges = [];
+  let start = sorted[0], prev = sorted[0];
+  for (let i=1;i<sorted.length;i++){
+    const d = sorted[i];
+    const diffDays = Math.round((new Date(d+'T00:00:00') - new Date(prev+'T00:00:00')) / 86400000);
+    if (diffDays === 1){ prev = d; continue; }
+    ranges.push([start, prev]);
+    start = d; prev = d;
+  }
+  ranges.push([start, prev]);
+  return ranges.map(([s,e]) => formatRange(s,e)).join(', ');
+}
+
+function jobWeeks(job){
+  const map = {};
+  for (const d of job.workedDates){
+    const wk = getWeekStart(d);
+    (map[wk] = map[wk] || []).push(d);
+  }
+  return Object.keys(map).sort().reverse().map(weekStart => ({
+    weekStart, dates: map[weekStart].sort(), paid: !!job.paidWeeks[weekStart]
+  }));
+}
+
+function jobTotals(job){
+  const weeks = jobWeeks(job);
+  let earned = 0, paid = 0;
+  for (const w of weeks){
+    earned += job.weeklyRate;
+    if (w.paid) paid += job.weeklyRate;
+  }
+  return {earned, paid, pending: earned - paid};
+}
+
+function overallIncomeTotals(){
+  let earned = 0, paid = 0;
+  for (const j of state.jobs){
+    const t = jobTotals(j);
+    earned += t.earned; paid += t.paid;
+  }
+  return {earned, paid, pending: earned - paid};
+}
+
+function incomeSummaryLabel(){
+  if (state.jobs.length===0) return 'None yet';
+  const {pending} = overallIncomeTotals();
+  return pending > 0 ? fmt(pending)+' pending' : 'All paid up';
+}
+
+function daysInMonth(y, m){ return new Date(y, m+1, 0).getDate(); }
+
+function nextPayDateLabel(payDays){
+  if (!payDays || !payDays.length) return null;
+  const sorted = [...payDays].sort((a,b)=>a-b);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const y = today.getFullYear(), m = today.getMonth();
+  let candidate = sorted.map(d => new Date(y, m, Math.min(d, daysInMonth(y,m)))).find(dt => dt >= today);
+  if (!candidate){
+    const y2 = m===11 ? y+1 : y, m2 = (m+1)%12;
+    candidate = new Date(y2, m2, Math.min(sorted[0], daysInMonth(y2,m2)));
+  }
+  return candidate.toLocaleDateString(undefined,{month:'short', day:'numeric'});
+}
+
+function payScheduleLabel(payDays){
+  if (!payDays || !payDays.length) return 'No pay dates set';
+  const ord = n => { const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
+  return 'Paid on the ' + payDays.map(ord).join(' & ') + ' of each month';
+}
+
 /* ---------- subscriptions ---------- */
 function addSubscription(name, amount, dueDate){
   state.subscriptions.push({id: genId(), name, amount, dueDate});
@@ -335,7 +504,8 @@ function addSubscription(name, amount, dueDate){
 function exportBackup(){
   const data = {
     safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
-    subscriptions: state.subscriptions, transactions: state.transactions, exportedAt: new Date().toISOString()
+    subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
+    transactions: state.transactions, exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -357,6 +527,8 @@ function importBackup(file){
       state.bankAccounts = data.bankAccounts || [];
       state.budgets = data.budgets || [];
       state.subscriptions = data.subscriptions || [];
+      state.liabilities = data.liabilities || [];
+      state.jobs = data.jobs || [];
       state.transactions = data.transactions || [];
       save(); render();
       alert('Backup restored.');
@@ -399,7 +571,9 @@ function iconSvg(name){
     plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
     check:'<polyline points="20 6 9 17 4 12"/>',
     x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
-    trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>'
+    trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+    briefcase:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14.5"/>'
   };
   return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name]||''}</svg>`;
 }
@@ -462,6 +636,15 @@ function renderHome(){
           <div class="panel-sub">Recurring monthly costs</div>
         </div>
         <div class="panel-value">${state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo'}</div>
+        <div class="panel-grip">${iconSvg('grip')}</div>
+      </button>`,
+    income: `<button class="panel-btn" data-key="income" onclick="navigate('income')">
+        <div class="panel-icon" style="background:#4f7a8c22; color:#4f7a8c;">${iconSvg('briefcase')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Jobs &amp; Gigs</div>
+          <div class="panel-sub">Shifts, hours &amp; payouts</div>
+        </div>
+        <div class="panel-value">${incomeSummaryLabel()}</div>
         <div class="panel-grip">${iconSvg('grip')}</div>
       </button>`
   };
@@ -667,6 +850,192 @@ function submitAddSubscription(){
   addSubscription(name, amount, dueDate);
 }
 
+function renderWeekRow(job, week, wIdx){
+  const key = job.id + ':' + week.weekStart;
+  const isOpen = !!state.expandedWeeks[key];
+  const endDate = new Date(week.weekStart + 'T00:00:00');
+  endDate.setDate(endDate.getDate() + 6);
+  const weekLabel = formatRange(week.weekStart, endDate.toISOString().slice(0,10));
+  const workedLabel = compactDateRanges(week.dates);
+
+  const dayChips = isOpen ? `
+    <div class="bubble-label">Worked days this week — tap to remove</div>
+    <div class="bubble-row">
+      ${week.dates.map(d => `<button class="bubble" style="width:auto; border-radius:999px; padding:0 10px;" onclick="removeWorkedDay('${job.id}','${d}')" title="Remove ${formatShortDate(d)}">${formatShortDate(d)} ✕</button>`).join('')}
+    </div>
+    <div id="addRow-week-${key}" style="margin-top:10px;">
+      <button class="add-row" style="padding:8px; margin-bottom:0;" onclick="showAddWeekDayForm('${job.id}','${key}')">${iconSvg('plus')} Add day(s) to this week</button>
+    </div>` : '';
+
+  return `<div class="sub-row" style="border-left:4px solid ${ROW_COLORS[wIdx % ROW_COLORS.length]}">
+    <div class="sub-row-top">
+      <button class="budget-head-left" style="background:none; border:none; text-align:left;" onclick="toggleWeekExpand('${job.id}','${week.weekStart}')">
+        <span class="row-label">${weekLabel}</span>
+      </button>
+      <div class="row-actions">
+        <span class="row-amount" style="color:${week.paid?'#3f7a5c':'var(--brass)'}">${fmt(job.weeklyRate)}</span>
+      </div>
+    </div>
+    <div class="sub-due">Worked: ${workedLabel}</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px;">
+      <button class="backup-link" onclick="toggleWeekExpand('${job.id}','${week.weekStart}')">${isOpen ? 'Hide days' : 'Edit days'}</button>
+      <button class="add-row" style="padding:6px 14px; margin-bottom:0; width:auto; border-color:${week.paid?'#3f7a5c':'var(--brass-dim)'}; color:${week.paid?'#3f7a5c':'var(--brass)'}" onclick="toggleWeekPaid('${job.id}','${week.weekStart}')">${week.paid ? '✓ Paid' : 'Mark week paid'}</button>
+    </div>
+    ${dayChips}
+  </div>`;
+}
+
+function renderJobCard(job, idx){
+  const color = ROW_COLORS[idx % ROW_COLORS.length];
+  const isOpen = !!state.expandedJobs[job.id];
+  const weeks = jobWeeks(job);
+  const totals = jobTotals(job);
+  const nextPay = nextPayDateLabel(job.payDays);
+
+  const editForm = isOpen ? `
+    <div class="budget-details">
+      <div class="budget-form" style="padding:0; border:none;">
+        <input class="add-input" id="jobName-${job.id}" placeholder="Job / gig name" value="${escapeHtml(job.name)}" />
+        <div class="budget-form-row">
+          <input class="add-input" id="jobRate-${job.id}" placeholder="Pay per week" inputmode="decimal" value="${job.weeklyRate}" />
+          <input class="add-input" id="jobPayDays-${job.id}" placeholder="Pay days e.g. 5, 20" value="${(job.payDays||[]).join(', ')}" />
+        </div>
+        <div class="budget-form-actions">
+          <button class="icon-btn" style="color:#3f7a5c" onclick="submitEditJob('${job.id}')">${iconSvg('check')}</button>
+          <button class="icon-btn" style="color:#a3483f" onclick="removeJob('${job.id}')">${iconSvg('trash')}</button>
+          <button class="icon-btn" style="color:#a8a49a" onclick="toggleJobExpand('${job.id}')">${iconSvg('x')}</button>
+        </div>
+      </div>
+    </div>` : '';
+
+  return `<div class="budget-card" style="border-left:4px solid ${color}">
+    <div class="budget-head">
+      <div class="budget-head-left">
+        <button class="expand-btn${isOpen?' open':''}" onclick="toggleJobExpand('${job.id}')" aria-label="Edit job">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <span class="row-label">${escapeHtml(job.name)}</span>
+      </div>
+      <span class="row-amount">${fmt(job.weeklyRate)}/wk</span>
+    </div>
+    <div class="budget-meta"><span>${payScheduleLabel(job.payDays)}</span>${nextPay ? `<span>Next: ${nextPay}</span>` : ''}</div>
+    ${editForm}
+
+    <div id="addRow-day-${job.id}" style="margin-top:12px;">
+      <button class="add-row" onclick="showAddWorkedDayForm('${job.id}')">${iconSvg('plus')} Log a day worked</button>
+    </div>
+
+    ${weeks.length===0 ? `<p class="empty-note">No days logged yet for this job.</p>` : weeks.map((w,i)=>renderWeekRow(job,w,i)).join('')}
+
+    <div class="budget-meta" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--divider);">
+      <span>Should've earned: <b>${fmt(totals.earned)}</b></span>
+      <span>Pending: <b style="color:${totals.pending>0?'var(--brass)':'#3f7a5c'}">${fmt(totals.pending)}</b></span>
+    </div>
+  </div>`;
+}
+
+function submitEditJob(id){
+  const name = document.getElementById(`jobName-${id}`).value.trim();
+  const rate = parseFloat(document.getElementById(`jobRate-${id}`).value);
+  const payDaysRaw = document.getElementById(`jobPayDays-${id}`).value;
+  const payDays = payDaysRaw.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n) && n>=1 && n<=31);
+  if (!name || isNaN(rate) || rate<0){
+    alert('Please enter a job name and a weekly pay amount.');
+    return;
+  }
+  state.expandedJobs[id] = false;
+  updateJob(id, {name, weeklyRate: rate, payDays});
+}
+
+function showAddWeekDayForm(jobId, rowKey){
+  const el = document.getElementById(`addRow-week-${rowKey}`);
+  const todayStr = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="budget-form">
+    <div class="budget-form-row">
+      <input class="add-input" id="weekDayFrom-${rowKey}" type="date" value="${todayStr}" autofocus />
+      <input class="add-input" id="weekDayTo-${rowKey}" type="date" placeholder="To (optional)" />
+    </div>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddWeekDay('${jobId}','${rowKey}')">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+}
+
+function submitAddWeekDay(jobId, rowKey){
+  const from = document.getElementById(`weekDayFrom-${rowKey}`).value;
+  const to = document.getElementById(`weekDayTo-${rowKey}`).value;
+  if (!from){ render(); return; }
+  addWorkedDayRange(jobId, from, to);
+}
+
+function showAddWorkedDayForm(jobId){
+  const el = document.getElementById(`addRow-day-${jobId}`);
+  const todayStr = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="budget-form">
+    <div class="bubble-label" style="margin-bottom:0;">Add one day, or a range of consecutive days</div>
+    <div class="budget-form-row">
+      <input class="add-input" id="newDayFrom-${jobId}" type="date" value="${todayStr}" autofocus />
+      <input class="add-input" id="newDayTo-${jobId}" type="date" placeholder="To (optional)" />
+    </div>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddWorkedDay('${jobId}')">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+}
+
+function submitAddWorkedDay(jobId){
+  const from = document.getElementById(`newDayFrom-${jobId}`).value;
+  const to = document.getElementById(`newDayTo-${jobId}`).value;
+  if (!from){ render(); return; }
+  addWorkedDayRange(jobId, from, to);
+}
+
+function renderIncome(){
+  const empty = state.jobs.length===0 ? `<p class="empty-note">No jobs yet. Add one with its weekly pay and pay dates to start logging days worked.</p>` : '';
+  const {earned, pending} = overallIncomeTotals();
+  return `${renderTopBar('JOBS & GIGS')}
+    <div class="content">
+      ${empty}
+      ${state.jobs.map((j,i)=>renderJobCard(j,i)).join('')}
+      <div id="addRow-income">
+        <button class="add-row" onclick="showAddJobForm()">${iconSvg('plus')} Add a job</button>
+      </div>
+      ${state.jobs.length>0 ? `
+      <div class="total-bar" style="background:linear-gradient(120deg, #4f7a8c, #345363);"><span class="total-label">TOTAL SHOULD'VE EARNED</span><span class="total-value">${fmt(earned)}</span></div>
+      ${pending>0 ? `<div class="total-bar" style="background:linear-gradient(120deg, #a3483f, #6e2f29);"><span class="total-label">PENDING PAYOUT</span><span class="total-value">${fmt(pending)}</span></div>` : ''}` : ''}
+    </div>`;
+}
+
+function showAddJobForm(){
+  const el = document.getElementById('addRow-income');
+  el.innerHTML = `<div class="budget-form">
+    <input class="add-input" id="newJobName" placeholder="Job / gig name" autofocus />
+    <div class="budget-form-row">
+      <input class="add-input" id="newJobRate" placeholder="Pay per week ($)" inputmode="decimal" />
+      <input class="add-input" id="newJobPayDays" placeholder="Pay days e.g. 5, 20" />
+    </div>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#3f7a5c" onclick="submitAddJob()">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="render()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+  document.getElementById('newJobName').focus();
+}
+
+function submitAddJob(){
+  const name = document.getElementById('newJobName').value.trim();
+  const rate = parseFloat(document.getElementById('newJobRate').value);
+  const payDaysRaw = document.getElementById('newJobPayDays').value;
+  const payDays = payDaysRaw.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n) && n>=1 && n<=31);
+  if (!name || isNaN(rate) || rate<0){
+    alert('Please enter a job name and a weekly pay amount.');
+    return;
+  }
+  addJob(name, rate, payDays);
+}
+
 function showAddBudgetForm(){
   const el = document.getElementById('addRow-budget');
   const todayStr = new Date().toISOString().slice(0,10);
@@ -834,6 +1203,7 @@ function render(){
   else if (state.page==='liability') app.innerHTML = renderLiabilities();
   else if (state.page==='budget') app.innerHTML = renderBudget();
   else if (state.page==='subscription') app.innerHTML = renderSubscriptions();
+  else if (state.page==='income') app.innerHTML = renderIncome();
   else if (state.page==='ledger') { app.innerHTML = renderLedger(); drawChartIfNeeded(); }
   const fab = document.getElementById('ledgerFab');
   if (fab) fab.style.display = state.page==='ledger' ? 'none' : 'flex';
