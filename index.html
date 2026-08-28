@@ -174,7 +174,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, filter:'all', expandedBudgets:{}, expandedWeeks:{}, expandedJobs:{}, homeOrder:['safe','bank','liability','budget','subscription','income'] };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, filter:'all', expandedBudgets:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, homeOrder:['safe','bank','liability','budget','subscription','income'] };
 
 function load(){
   try {
@@ -350,8 +350,13 @@ function removeJob(id){
   save(); render();
 }
 
-function toggleJobExpand(id){
-  state.expandedJobs[id] = !state.expandedJobs[id];
+function toggleJobCollapse(id){
+  state.collapsedJobs[id] = !state.collapsedJobs[id];
+  render();
+}
+
+function toggleJobEdit(id){
+  state.editingJob[id] = !state.editingJob[id];
   render();
 }
 
@@ -887,12 +892,13 @@ function renderWeekRow(job, week, wIdx){
 
 function renderJobCard(job, idx){
   const color = ROW_COLORS[idx % ROW_COLORS.length];
-  const isOpen = !!state.expandedJobs[job.id];
+  const isCollapsed = !!state.collapsedJobs[job.id];
+  const isEditing = !!state.editingJob[job.id];
   const weeks = jobWeeks(job);
   const totals = jobTotals(job);
   const nextPay = nextPayDateLabel(job.payDays);
 
-  const editForm = isOpen ? `
+  const editForm = isEditing ? `
     <div class="budget-details">
       <div class="budget-form" style="padding:0; border:none;">
         <input class="add-input" id="jobName-${job.id}" placeholder="Job / gig name" value="${escapeHtml(job.name)}" />
@@ -903,24 +909,12 @@ function renderJobCard(job, idx){
         <div class="budget-form-actions">
           <button class="icon-btn" style="color:#3f7a5c" onclick="submitEditJob('${job.id}')">${iconSvg('check')}</button>
           <button class="icon-btn" style="color:#a3483f" onclick="removeJob('${job.id}')">${iconSvg('trash')}</button>
-          <button class="icon-btn" style="color:#a8a49a" onclick="toggleJobExpand('${job.id}')">${iconSvg('x')}</button>
+          <button class="icon-btn" style="color:#a8a49a" onclick="toggleJobEdit('${job.id}')">${iconSvg('x')}</button>
         </div>
       </div>
     </div>` : '';
 
-  return `<div class="budget-card" style="border-left:4px solid ${color}">
-    <div class="budget-head">
-      <div class="budget-head-left">
-        <button class="expand-btn${isOpen?' open':''}" onclick="toggleJobExpand('${job.id}')" aria-label="Edit job">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <span class="row-label">${escapeHtml(job.name)}</span>
-      </div>
-      <span class="row-amount">${fmt(job.weeklyRate)}/wk</span>
-    </div>
-    <div class="budget-meta"><span>${payScheduleLabel(job.payDays)}</span>${nextPay ? `<span>Next: ${nextPay}</span>` : ''}</div>
-    ${editForm}
-
+  const daysSection = !isCollapsed ? `
     <div id="addRow-day-${job.id}" style="margin-top:12px;">
       <button class="add-row" onclick="showAddWorkedDayForm('${job.id}')">${iconSvg('plus')} Log a day worked</button>
     </div>
@@ -930,7 +924,24 @@ function renderJobCard(job, idx){
     <div class="budget-meta" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--divider);">
       <span>Should've earned: <b>${fmt(totals.earned)}</b></span>
       <span>Pending: <b style="color:${totals.pending>0?'var(--brass)':'#3f7a5c'}">${fmt(totals.pending)}</b></span>
+    </div>` : '';
+
+  return `<div class="budget-card" style="border-left:4px solid ${color}">
+    <div class="budget-head">
+      <div class="budget-head-left">
+        <button class="expand-btn${!isCollapsed?' open':''}" onclick="toggleJobCollapse('${job.id}')" aria-label="Toggle worked days">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <span class="row-label">${escapeHtml(job.name)}</span>
+      </div>
+      <span class="row-amount">${fmt(job.weeklyRate)}/wk</span>
     </div>
+    <div class="budget-meta"><span>${payScheduleLabel(job.payDays)}</span>${nextPay ? `<span>Next: ${nextPay}</span>` : ''}</div>
+    <div style="margin-top:6px;">
+      <button class="backup-link" onclick="toggleJobEdit('${job.id}')">${isEditing ? 'Hide edit' : 'Edit'}</button>
+    </div>
+    ${editForm}
+    ${daysSection}
   </div>`;
 }
 
@@ -943,7 +954,7 @@ function submitEditJob(id){
     alert('Please enter a job name and a weekly pay amount.');
     return;
   }
-  state.expandedJobs[id] = false;
+  state.editingJob[id] = false;
   updateJob(id, {name, weeklyRate: rate, payDays});
 }
 
