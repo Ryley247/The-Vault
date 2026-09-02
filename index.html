@@ -104,6 +104,15 @@
   .add-input{flex:1; background:var(--panel); color:var(--bone); border:1px solid var(--panel-border);
     border-radius:12px; padding:12px;}
 
+  .reorder-block{}
+  .no-select{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation;}
+  .sortable-item{transition:transform .16s ease, box-shadow .16s ease;}
+  .reorder-mode .sortable-item{cursor:grab;}
+  .sortable-item.sortable-ghost{opacity:.28; transform:scale(.985);}
+  .sortable-item.sortable-drag{cursor:grabbing; transform:scale(1.02); box-shadow:0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(255,214,93,.22);}
+  .sortable-ghost{opacity:.35;}
+  .sortable-drag{box-shadow:0 10px 30px rgba(0,0,0,.5); border-radius:16px;}
+
   .total-bar{display:flex; align-items:center; justify-content:space-between; border-radius:16px;
     padding:16px 20px; margin-top:16px; border:1.5px solid var(--plum); background:linear-gradient(135deg, rgba(107,74,115,.28), rgba(107,74,115,.06));}
   .total-label{font-family:'Oswald',sans-serif; letter-spacing:.05em; font-size:15px;}
@@ -187,6 +196,11 @@
   .area-option input{width:17px; height:17px; accent-color:var(--brass);}
 
   .tx-item{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--divider);}
+  .tx-item.selectable{cursor:pointer; gap:10px;}
+  .tx-checkbox input{width:19px; height:19px; accent-color:var(--brass);}
+  .select-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; margin:10px 0; border:1px solid var(--panel-border); border-radius:13px; background:var(--panel); font-size:13px;}
+  .chip-btn{padding:7px 14px; border-radius:999px; font-size:13px; font-weight:600; border:1px solid var(--panel-border); color:var(--bone-dim); background:transparent;}
+  .chip-btn:disabled{opacity:.4;}
   .tx-loc{font-weight:600; font-size:14.5px;}
   .tx-date{color:var(--bone-dim); font-size:12px; margin-top:2px;}
   .tx-delta{font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700;}
@@ -202,10 +216,381 @@
   .milestone-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.64);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 14px 16px;animation:fadeIn .16s ease}.modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:slideDown .2s ease}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.modal-title{font-family:'Oswald',sans-serif;font-size:21px;letter-spacing:.04em}.modal-close{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--bone-dim);display:grid;place-items:center}.modal .budget-form{margin:0}.modal .budget-form-actions{margin-top:16px;padding-top:14px;border-top:1px solid var(--divider)}.notes-label{font-size:10.5px;color:var(--brass);font-weight:700;letter-spacing:.07em;margin:4px 0}.notes-box{min-height:88px;resize:vertical;line-height:1.45}.sub-notes{margin-top:9px;padding:10px 12px;background:var(--bg);border:1px solid var(--divider);border-radius:11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}.goal-spacer{height:9px}.ledger-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;margin:12px 0 2px;border:1px solid var(--panel-border);border-radius:13px;background:var(--panel);font-size:13px;font-weight:700}.ledger-count{font-size:11px;color:var(--brass)}.tx-description{font-size:13.5px;font-weight:700}.tx-context{font-size:11.5px;color:var(--bone-dim);margin-top:3px}.tx-date{font-size:11.5px;color:var(--bone-dim);margin-top:3px}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideDown{from{transform:translateY(-20px);opacity:.6}to{transform:translateY(0);opacity:1}}@media(min-width:521px){.modal-backdrop{align-items:center}.modal{max-height:82vh}}
+
+/* ---------- Modern Apple-inspired visual refresh ---------- */
+:root{
+  --bg:#08090b;
+  --panel:#15171b;
+  --panel-border:#2a2d34;
+  --divider:#25282e;
+  --brass:#f2c75c;
+  --brass-dim:#a98735;
+  --bone:#f5f5f7;
+  --bone-dim:#a7aab2;
+  --ledger-green:#43c77a;
+  --steel:#4e9bd6;
+  --rust:#ff5f57;
+  --olive:#b5a63b;
+  --plum:#a56de2;
+}
+html,body{
+  background:
+    radial-gradient(900px 500px at 50% -180px, rgba(242,199,92,.09), transparent 65%),
+    var(--bg);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  color:var(--bone);
+  letter-spacing:-.01em;
+}
+#app{max-width:560px;}
+
+.topbar{padding:20px 20px 12px;gap:10px;}
+.root-topbar{padding:20px 20px 6px;}
+.page-title,.home-title,.panel-title,.modal-title,.total-label{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  letter-spacing:-.025em;
+}
+.page-title{font-size:23px;font-weight:700;}
+.home-title{font-size:25px;font-weight:750;letter-spacing:-.035em;}
+.home-sub{color:#aeb1b8;font-size:12px;}
+.net-worth{
+  color:#ffd76c;
+  font-size:28px;
+  letter-spacing:-.04em;
+  text-shadow:0 0 24px rgba(242,199,92,.13);
+}
+
+.panel-btn,.row,.budget-card,.sub-row,.chart-card,.keypad-btn,.ledger-toggle,.select-bar,.area-toggle,.area-menu,.add-input,.budget-form,.modal{
+  background:linear-gradient(145deg,rgba(27,29,34,.96),rgba(17,19,23,.98));
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 8px 30px rgba(0,0,0,.16);
+}
+.panel-btn{
+  border-radius:18px;
+  padding:13px 14px;
+  margin-bottom:9px;
+  transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.panel-btn:active{transform:scale(.985);}
+.panel-icon{width:38px;height:38px;box-shadow:0 4px 12px rgba(0,0,0,.2);}
+.panel-title{font-size:15px;font-weight:650;}
+.panel-sub{font-size:11.5px;color:#aeb1b8;}
+.panel-value{font-size:13.5px;}
+
+.content{padding:0 20px 110px;}
+.section-label{color:#f2c75c;font-size:11px;font-weight:750;letter-spacing:.08em;}
+
+.back-btn,.gear-btn,.topbar-add,.section-add{
+  color:#ffd76c;
+  border-color:rgba(242,199,92,.52);
+}
+.topbar-add,.section-add,.gear-btn{
+  background:rgba(242,199,92,.06);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset;
+}
+.gear-btn{width:36px;height:36px;}
+
+.row{border-radius:18px;padding:16px 18px;margin-bottom:10px;}
+.row-label{font-size:16px;font-weight:650;}
+.row-amount{font-size:17px;}
+.row-input{background:#090a0c;border-color:#d9b34f;border-radius:10px;}
+
+.add-row{
+  border-color:rgba(242,199,92,.52);
+  background:rgba(242,199,92,.035);
+  border-radius:18px;
+  padding:13px;
+  transition:background .16s ease;
+}
+.add-row:active{background:rgba(242,199,92,.08);}
+.add-input{border-radius:12px;padding:12px 13px;color:var(--bone);outline:none;}
+.add-input:focus,.row-input:focus{
+  border-color:#ffd76c;
+  box-shadow:0 0 0 3px rgba(242,199,92,.12);
+}
+
+.total-bar{
+  border-color:rgba(165,109,226,.55);
+  background:linear-gradient(135deg,rgba(165,109,226,.20),rgba(165,109,226,.045));
+  border-radius:18px;
+  box-shadow:0 8px 28px rgba(0,0,0,.18);
+}
+.total-label{font-size:15px;font-weight:700;}
+.total-value{font-size:20px;}
+
+.tab-bar{
+  background:rgba(10,11,14,.82);
+  border-top:1px solid rgba(255,255,255,.10);
+  backdrop-filter:blur(24px) saturate(150%);
+  -webkit-backdrop-filter:blur(24px) saturate(150%);
+  box-shadow:0 -12px 35px rgba(0,0,0,.18);
+  padding-top:9px;
+}
+.tab-btn{color:#8f929a;}
+.tab-btn.active{color:#ffd76c;}
+.tab-btn svg{width:21px;height:21px;}
+.tab-btn .tab-label{font-size:10.5px;font-weight:650;}
+.tab-vault-icon{
+  background:linear-gradient(145deg,#ffd76c,#c59d3d);
+  color:#111214;
+  box-shadow:0 4px 16px rgba(242,199,92,.28),0 1px 0 rgba(255,255,255,.35) inset;
+}
+
+.dial{
+  border-color:#b48f37;
+  background:radial-gradient(circle at 35% 30%,#30333a,var(--bg) 70%);
+}
+.dial-center{background:linear-gradient(145deg,#ffd76c,#a98735);}
+
+.chart-card{padding:17px;border-radius:18px;}
+.chart-scrub-value{font-size:25px;letter-spacing:-.035em;}
+.chart-scrub-delta{font-size:14px;}
+.budget-card{padding:15px 16px;border-radius:18px;}
+.progress-track{height:7px;background:#2b2e35;}
+.progress-fill{box-shadow:0 0 10px rgba(255,255,255,.08);}
+.budget-suggest.achieved{color:#43c77a;}
+.bubble{
+  border-color:rgba(242,199,92,.6);
+  color:#ffd76c;
+  background:rgba(242,199,92,.025);
+}
+.bubble.next{
+  background:#f2c75c;
+  color:#090a0b;
+  box-shadow:0 4px 12px rgba(242,199,92,.2);
+}
+.sub-row{border-radius:18px;padding:15px 16px;}
+.sub-chip{border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.025);}
+.filter-chip,.range-tab,.chip-btn{
+  border-color:rgba(255,255,255,.11);
+  background:rgba(255,255,255,.025);
+}
+.filter-chip.active,.range-tab.active{
+  background:#f2c75c;color:#090a0b;border-color:#f2c75c;
+}
+.area-toggle{border-radius:14px;}
+.area-menu{border-radius:14px;}
+.tx-item{border-bottom-color:rgba(255,255,255,.075);}
+.tx-checkbox input,.area-option input{accent-color:#f2c75c;}
+.save-toast{
+  background:#f2c75c;color:#090a0b;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.milestone-toast{
+  background:linear-gradient(135deg,#ffd76c,#b48f37);
+  color:#090a0b;
+}
+.modal-backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(10px) saturate(115%);-webkit-backdrop-filter:blur(10px) saturate(115%);}
+.modal{border-radius:24px;padding:21px;box-shadow:0 30px 90px rgba(0,0,0,.62);}
+.modal-close{background:#22252b;color:#b7bac2;}
+.lock-dots{gap:15px;}
+.lock-dot{border-color:#a98735;}
+.lock-dot.filled{background:#f2c75c;border-color:#f2c75c;box-shadow:0 0 10px rgba(242,199,92,.22);}
+.keypad{gap:16px;}
+.keypad-btn{border-radius:50%;border-color:rgba(255,255,255,.10);font-size:21px;}
+.keypad-btn:active{background:#292c32;}
+button,input,select,textarea{outline:none;}
+::selection{background:rgba(242,199,92,.28);color:#fff;}
+@media (hover:hover){
+  .panel-btn:hover,.row:hover,.budget-card:hover,.sub-row:hover,.chart-card:hover{
+    border-color:rgba(255,255,255,.15);
+  }
+}
+
+
+/* ---------- Gold material + interactive navigation refinement ---------- */
+:root{
+  --gold-1:#fff4a6;
+  --gold-2:#ffd96a;
+  --gold-3:#d6a83e;
+  --gold-4:#8e631d;
+  --gold-5:#5b3b0e;
+  --gold-metal:linear-gradient(118deg,#6e480d 0%,#c48b24 17%,#ffe58a 34%,#b97816 50%,#f9dc6d 66%,#9b6919 82%,#5e3d0b 100%);
+  --gold-metal-bright:linear-gradient(118deg,#8a5a11 0%,#e2ae3e 16%,#fff2a0 31%,#d18f20 47%,#fff0a0 63%,#c48318 80%,#70480c 100%);
+}
+
+/* A layered metallic surface: highlights, darker edges, and very fine grain. */
+.gold-surface,
+.tab-vault-icon,
+.bubble.next,
+.filter-chip.active,
+.range-tab.active,
+.save-toast,
+.milestone-toast{
+  background-image:
+    repeating-linear-gradient(92deg,rgba(255,255,255,.055) 0 1px,rgba(0,0,0,.035) 1px 3px),
+    radial-gradient(ellipse at 18% 0%,rgba(255,247,183,.62),transparent 28%),
+    radial-gradient(ellipse at 82% 100%,rgba(75,42,5,.34),transparent 42%),
+    var(--gold-metal);
+  background-blend-mode:overlay,screen,multiply,normal;
+  border-color:rgba(255,232,139,.72);
+  color:#191206;
+  text-shadow:0 1px 0 rgba(255,244,178,.28);
+}
+
+/* Make gold typography read as metal rather than a single yellow swatch. */
+.net-worth,
+.section-label,
+.back-btn,
+.gear-btn,
+.topbar-add,
+.section-add,
+.tab-btn.active,
+.ledger-count,
+.sub-notes-label,
+.lock-dot.filled{
+  color:transparent;
+  background-image:var(--gold-metal-bright);
+  -webkit-background-clip:text;
+  background-clip:text;
+  text-shadow:none;
+}
+.lock-dot.filled{background-image:var(--gold-metal-bright);-webkit-background-clip:border-box;background-clip:border-box;}
+
+.dial-center{
+  background-image:
+    repeating-linear-gradient(92deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.025) 1px 3px),
+    radial-gradient(ellipse at 25% 8%,rgba(255,247,183,.48),transparent 34%),
+    var(--gold-metal-bright);
+  background-blend-mode:overlay,screen,normal;
+  border:1px solid rgba(255,235,142,.6);
+  box-shadow:inset 0 1px 0 rgba(255,250,201,.45),0 3px 12px rgba(0,0,0,.48),0 0 18px rgba(226,173,48,.14);
+}
+.tab-btn.active{color:#e9b94f;}
+.back-btn,.gear-btn,.topbar-add,.section-add{color:#e9b94f;}
+.lock-dot.filled{
+  background-image:var(--gold-metal-bright);
+  border-color:#e9b94f;
+  box-shadow:0 0 12px rgba(235,187,69,.22),inset 0 1px 0 rgba(255,250,198,.42);
+}
+
+/* More dimensional gold controls throughout the app. */
+.topbar-add,.section-add,.gear-btn{
+  background-image:
+    linear-gradient(rgba(255,221,102,.07),rgba(91,59,14,.12)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 4px);
+  box-shadow:inset 0 1px 0 rgba(255,244,177,.22),0 5px 18px rgba(0,0,0,.22);
+}
+
+.row-input:focus,.add-input:focus{
+  border-color:#ffe78c;
+  box-shadow:0 0 0 3px rgba(255,213,91,.13),0 0 22px rgba(232,174,47,.10);
+}
+
+/* Floating, glassy navigation instead of a flat strip. */
+.tab-bar{
+  left:50%;
+  right:auto;
+  bottom:max(10px,env(safe-area-inset-bottom));
+  width:min(500px,calc(100% - 20px));
+  transform:translateX(-50%);
+  min-height:68px;
+  padding:7px 7px 7px;
+  align-items:center;
+  gap:5px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;
+  background:
+    linear-gradient(180deg,rgba(31,33,39,.84),rgba(12,13,16,.91));
+  backdrop-filter:blur(28px) saturate(165%);
+  -webkit-backdrop-filter:blur(28px) saturate(165%);
+  box-shadow:
+    0 18px 50px rgba(0,0,0,.52),
+    0 2px 0 rgba(255,255,255,.06) inset,
+    0 0 0 1px rgba(0,0,0,.35);
+}
+.tab-btn{
+  position:relative;
+  min-height:54px;
+  justify-content:center;
+  gap:3px;
+  flex:1;
+  border-radius:18px;
+  color:#92959e;
+  transition:transform .18s ease,color .18s ease;
+  overflow:hidden;
+}
+.tab-btn::before{
+  content:"";
+  position:absolute;
+  inset:4px 3px;
+  border-radius:16px;
+  background:rgba(255,255,255,0);
+  box-shadow:none;
+  opacity:0;
+  transform:scale(.92);
+  transition:opacity .2s ease,transform .2s ease,background .2s ease,box-shadow .2s ease;
+}
+.tab-btn.active::before{
+  opacity:1;
+  transform:scale(1);
+  background:linear-gradient(180deg,rgba(255,216,106,.13),rgba(255,216,106,.035));
+  box-shadow:inset 0 1px 0 rgba(255,238,151,.10),0 0 22px rgba(222,169,54,.06);
+}
+.tab-btn > *{position:relative;z-index:1;}
+.tab-btn svg{width:21px;height:21px;transition:transform .18s ease,filter .18s ease;}
+.tab-btn .tab-label{font-size:10px;font-weight:650;letter-spacing:.01em;}
+.tab-btn.active svg{transform:translateY(-1px) scale(1.04);filter:drop-shadow(0 0 7px rgba(255,214,93,.24));}
+.tab-btn:active{transform:scale(.94);}
+
+/* The Vault is the primary action: elevated, metallic, and slightly larger. */
+#tabVault{flex:0 0 78px;min-height:58px;overflow:visible;}
+#tabVault::before{display:none;}
+.tab-vault-icon{
+  width:46px;
+  height:46px;
+  border-radius:15px;
+  transform:translateY(-9px);
+  border:1px solid rgba(255,237,148,.72);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.40),
+    0 0 22px rgba(225,173,53,.18),
+    inset 0 1px 0 rgba(255,250,198,.48),
+    inset 0 -5px 12px rgba(72,42,5,.16);
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+#tabVault.active .tab-vault-icon{
+  transform:translateY(-10px) scale(1.04);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,.46),
+    0 0 30px rgba(238,190,69,.25),
+    inset 0 1px 0 rgba(255,250,198,.56),
+    inset 0 -5px 12px rgba(72,42,5,.18);
+}
+#tabVault .tab-label{margin-top:-8px;}
+#tabVault.active .tab-label{color:#e8b949;}
+
+/* Ripple feedback makes taps feel physical on mobile. */
+.tab-ripple{
+  position:absolute;
+  width:12px;height:12px;
+  border-radius:50%;
+  background:rgba(255,224,119,.24);
+  transform:translate(-50%,-50%) scale(1);
+  pointer-events:none;
+  animation:tabRipple .48s ease-out forwards;
+  z-index:0!important;
+}
+@keyframes tabRipple{to{transform:translate(-50%,-50%) scale(13);opacity:0;}}
+
+/* Gold dividers and progress tracks get a subtle metallic sheen. */
+.progress-fill{
+  background-image:repeating-linear-gradient(92deg,rgba(255,255,255,.08) 0 1px,transparent 1px 4px),var(--gold-metal);
+  background-blend-mode:overlay,normal;
+}
+.bubble.next,.filter-chip.active,.range-tab.active{box-shadow:inset 0 1px 0 rgba(255,248,194,.45),0 5px 16px rgba(208,157,42,.18);}
+
+@media(max-width:380px){
+  .tab-bar{width:calc(100% - 12px);bottom:max(6px,env(safe-area-inset-bottom));}
+  #tabVault{flex-basis:72px;}
+  .tab-btn .tab-label{font-size:9.5px;}
+}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<button id="reorderDoneBtn" onclick="endReorderMode()" style="display:none; position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:70; background:var(--brass); color:#1a140d; font-weight:700; font-size:14px; letter-spacing:.02em; padding:12px 24px; border-radius:999px; box-shadow:0 10px 28px rgba(0,0,0,.45); border:none;">Done Reordering</button>
 <div class="tab-bar" id="tabBar">
   <button class="tab-btn" id="tabModules" onclick="navigate('modules')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -220,6 +605,20 @@
     <span class="tab-label">Ledger</span>
   </button>
 </div>
+<script>
+// Touch feedback for the floating navigation.
+document.addEventListener('pointerdown', function(e){
+  const btn=e.target.closest && e.target.closest('.tab-btn');
+  if(!btn) return;
+  const r=btn.getBoundingClientRect();
+  const ripple=document.createElement('span');
+  ripple.className='tab-ripple';
+  ripple.style.left=(e.clientX-r.left)+'px';
+  ripple.style.top=(e.clientY-r.top)+'px';
+  btn.appendChild(ripple);
+  setTimeout(()=>ripple.remove(),520);
+},{passive:true});
+</script>
 <div class="save-toast" id="saveToast">Saved</div>
 <div class="milestone-toast" id="milestoneToast"></div>
 
@@ -233,6 +632,22 @@ window.addEventListener('orientationchange', setVH);
 /* ---------- palette / helpers ---------- */
 const ROW_COLORS = ['#3f7a5c','#3b5568','#736e30','#a3483f','#6b4a73','#8a7038'];
 const STORAGE_KEY = 'vault-tracker-data';
+function normalizeOrder(saved, defaults){
+  const kept = Array.isArray(saved) ? saved.filter(k=>defaults.includes(k)) : [];
+  return [...kept, ...defaults.filter(k=>!kept.includes(k))];
+}
+function normalizeItemOrder(order, items){
+  const ids = items.map(x=>x.id);
+  const kept = Array.isArray(order) ? order.filter(id=>ids.includes(id)) : [];
+  return [...kept, ...ids.filter(id=>!kept.includes(id))];
+}
+function orderedItems(items, order){
+  const byId = Object.fromEntries(items.map(x=>[x.id,x]));
+  const out=[];
+  (Array.isArray(order)?order:[]).forEach(id=>{ if(byId[id]){ out.push(byId[id]); delete byId[id]; } });
+  Object.values(byId).forEach(x=>out.push(x));
+  return out;
+}
 const DEFAULT_SAFE = [
   {id:'cash', name:'Cash', amount:77},
   {id:'quarter', name:'Quarters', amount:24},
@@ -247,7 +662,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none' };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[] };
 
 function load(){
   try {
@@ -273,16 +688,23 @@ function load(){
       workedDates: j.workedDates || [], paidWeeks: j.paidWeeks || {}, taxRate: j.taxRate || 0
     }));
     state.transactions = data.transactions || [];
+    state.deletedTx = data.deletedTx || [];
     state.seenMilestones = data.seenMilestones || [];
     state.lastBackupAt = data.lastBackupAt || null;
     state.pin = data.pin || null;
     state.locked = !!state.pin;
     const defaultMoneyOrder = ['safe','bank'];
-    const savedMoneyOrder = Array.isArray(data.moneyOrder) ? data.moneyOrder.filter(k=>defaultMoneyOrder.includes(k)) : [];
-    state.moneyOrder = [...savedMoneyOrder, ...defaultMoneyOrder.filter(k=>!savedMoneyOrder.includes(k))];
+    state.moneyOrder = normalizeOrder(data.moneyOrder, defaultMoneyOrder);
     const defaultBalancesOrder = ['liability','income'];
-    const savedBalancesOrder = Array.isArray(data.balancesOrder) ? data.balancesOrder.filter(k=>defaultBalancesOrder.includes(k)) : [];
-    state.balancesOrder = [...savedBalancesOrder, ...defaultBalancesOrder.filter(k=>!savedBalancesOrder.includes(k))];
+    state.balancesOrder = normalizeOrder(data.balancesOrder, defaultBalancesOrder);
+    state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
+    state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
+    state.safeOrder = normalizeItemOrder(data.safeOrder, state.safeItems);
+    state.bankOrder = normalizeItemOrder(data.bankOrder, state.bankAccounts);
+    state.subscriptionOrder = normalizeItemOrder(data.subscriptionOrder, state.subscriptions);
+    state.liabilityOweOrder = normalizeItemOrder(data.liabilityOweOrder, state.liabilities.filter(x=>x.type==='owe'));
+    state.liabilityOwedOrder = normalizeItemOrder(data.liabilityOwedOrder, state.liabilities.filter(x=>x.type==='owed'));
+    state.jobOrder = normalizeItemOrder(data.jobOrder, state.jobs);
   } catch(e){
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
@@ -300,7 +722,8 @@ function save(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
       subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
-      transactions: state.transactions, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
+      transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
+      moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
       seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin
     }));
     showSaved();
@@ -363,6 +786,10 @@ function updateAmount(scope, id, newAmount){
 function addItem(scope, name, extra={}){
   const item = {id: genId(), name, amount:0, ...extra};
   getList(scope).push(item);
+  if(scope==='safe') state.safeOrder.push(item.id);
+  else if(scope==='bank') state.bankOrder.push(item.id);
+  else if(scope==='subscription') state.subscriptionOrder.push(item.id);
+  else if(scope==='liability') (item.type==='owe' ? state.liabilityOweOrder : state.liabilityOwedOrder).push(item.id);
   save(); render();
 }
 
@@ -514,7 +941,7 @@ function toggleBudgetLogs(id){
 
 /* ---------- jobs / income ---------- */
 function addJob(name, weeklyRate, payDays){
-  state.jobs.push({id: genId(), name, weeklyRate, payDays, workedDates: [], paidWeeks: {}});
+  const id=genId(); state.jobs.push({id, name, weeklyRate, payDays, workedDates: [], paidWeeks: {}}); state.jobOrder.push(id);
   save(); render();
 }
 
@@ -678,7 +1105,7 @@ function payScheduleLabel(payDays){
 
 /* ---------- subscriptions ---------- */
 function addSubscription(name, amount, dueDate, billing='Monthly', notes=''){
-  state.subscriptions.push({id: genId(), name, amount, dueDate, billing, notes});
+  const id=genId(); state.subscriptions.push({id, name, amount, dueDate, billing, notes}); state.subscriptionOrder.push(id);
   save(); render();
 }
 
@@ -692,7 +1119,8 @@ function exportBackup(){
   const data = {
     safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
     subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
-    transactions: state.transactions, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
+    transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
+    moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder,
     seenMilestones: state.seenMilestones, pin: state.pin,
     exportedAt: new Date().toISOString()
   };
@@ -763,10 +1191,19 @@ function confirmRestore(){
   state.liabilities = (data.liabilities || []).map(l => ({...l, interestRate: l.interestRate || 0, monthlyPayment: l.monthlyPayment || 0}));
   state.jobs = (data.jobs || []).map(j => ({...j, taxRate: j.taxRate || 0}));
   state.transactions = data.transactions || [];
+  state.deletedTx = data.deletedTx || [];
   state.seenMilestones = data.seenMilestones || [];
   state.pin = data.pin || null;
-  if (Array.isArray(data.moneyOrder)) state.moneyOrder = data.moneyOrder;
-  if (Array.isArray(data.balancesOrder)) state.balancesOrder = data.balancesOrder;
+  if (Array.isArray(data.moneyOrder)) state.moneyOrder = normalizeOrder(data.moneyOrder, ['safe','bank']);
+  if (Array.isArray(data.balancesOrder)) state.balancesOrder = normalizeOrder(data.balancesOrder, ['liability','income']);
+  state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
+  state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
+  state.safeOrder = normalizeItemOrder(data.safeOrder, state.safeItems);
+  state.bankOrder = normalizeItemOrder(data.bankOrder, state.bankAccounts);
+  state.subscriptionOrder = normalizeItemOrder(data.subscriptionOrder, state.subscriptions);
+  state.liabilityOweOrder = normalizeItemOrder(data.liabilityOweOrder, state.liabilities.filter(x=>x.type==='owe'));
+  state.liabilityOwedOrder = normalizeItemOrder(data.liabilityOwedOrder, state.liabilities.filter(x=>x.type==='owed'));
+  state.jobOrder = normalizeItemOrder(data.jobOrder, state.jobs);
   state.pendingRestore = null;
   save(); render();
 }
@@ -898,8 +1335,17 @@ function submitPinSetupStep(){
 }
 function cancelPinSetup(){ state.pinSetupStep=null; state.pinSetupValue=''; state.pinSetupError=null; closeModal(); }
 function removePin(){
-  if (!confirm('Remove your PIN? The app will no longer lock when reopened.')) return;
-  state.pin=null; save(); render();
+  const body = `<div class="budget-form">
+    <p class="empty-note" style="text-align:left; padding:0;">Remove your PIN? The app will no longer lock when reopened.</p>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#a3483f" onclick="confirmRemovePin()">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+  openModal('Remove PIN?', body);
+}
+function confirmRemovePin(){
+  state.pin=null; closeModal(); save(); render();
 }
 
 function closeModal(){state.modal=null;render()}
@@ -907,7 +1353,7 @@ function openModal(title,body){state.modal={title,body};render();setTimeout(()=>
 function modalHTML(){return state.modal?`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div class="modal-title">${escapeHtml(state.modal.title)}</div><button class="modal-close" onclick="closeModal()">${iconSvg('x')}</button></div>${state.modal.body}</div></div>`:''}
 function txDescription(t){if(t.description)return t.description;const base=String(t.location||'Account change').replace(/^(Safe|Bank|Budget|Liability|Subscription):\s*/,'').replace(/ removed$/,'');return `${t.delta>=0?'Money added':'Money removed'}: ${base}`}
 function showAddForm(scope){openModal('Add '+scopeLabel(scope),`<div class="budget-form"><input class="add-input" id="modalAddName" placeholder="Name" onkeydown="if(event.key==='Enter')submitModalAdd('${scope}')"><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitModalAdd('${scope}')">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
-function submitModalAdd(scope){const e=document.getElementById('modalAddName'),name=e?e.value.trim():'';if(!name){if(e)e.focus();return}getList(scope).push({id:genId(),name,amount:0});closeModal();save()}
+function submitModalAdd(scope){const e=document.getElementById('modalAddName'),name=e?e.value.trim():'';if(!name){if(e)e.focus();return}const id=genId();getList(scope).push({id,name,amount:0});if(scope==='safe')state.safeOrder.push(id);else if(scope==='bank')state.bankOrder.push(id);else if(scope==='subscription')state.subscriptionOrder.push(id);else if(scope==='liability')state.liabilityOwedOrder.push(id);closeModal();save();render()}
 function renderWeekRow(job, week, wIdx){
   const key = job.id + ':' + week.weekStart;
   const isOpen = !!state.expandedWeeks[key];
@@ -963,7 +1409,7 @@ function renderJobCard(job, idx){
     </div>
     ${job.taxRate>0 ? `<div class="budget-meta" style="margin-top:6px;"><span>Set aside for taxes (${job.taxRate}%)</span><span style="color:var(--brass)">${fmt(totals.earned*job.taxRate/100)}</span></div>` : ''}` : '';
 
-  return `<div class="budget-card" style="border-left:4px solid ${color}">
+  return `<div class="budget-card sortable-item" data-id="${job.id}" style="border-left:4px solid ${color}">
     <div class="budget-head">
       <div class="budget-head-left">
         <button class="expand-btn${!isCollapsed?' open':''}" onclick="toggleJobCollapse('${job.id}')" aria-label="Toggle worked days">
@@ -1040,7 +1486,7 @@ function renderIncome(){
   return `${renderTopBar('JOBS & GIGS', 'showAddJobForm()')}
     <div class="content">
       ${empty}
-      ${state.jobs.map((j,i)=>renderJobCard(j,i)).join('')}
+      <div id="jobList">${orderedItems(state.jobs,state.jobOrder).map((j,i)=>renderJobCard(j,i)).join('')}</div>
       <div id="addRow-income"></div>
       ${state.jobs.length>0 ? `
       <div class="total-bar" style="border-color:#4f7a8c; background:linear-gradient(135deg, rgba(79,122,140,.28), rgba(79,122,140,.06));"><span class="total-label">TOTAL SHOULD'VE EARNED</span><span class="total-value">${fmt(earned)}</span></div>
@@ -1123,23 +1569,23 @@ function renderHome(){
   }
 
   const moneyItems = {
-    safe: `<button class="panel-btn" data-key="safe" ${rm?'':`onclick="navigate('safe')"`}>
+    safe: `<button class="panel-btn no-select" data-key="safe" onclick="navigate('safe')">
         <div class="panel-icon" style="background:#3f7a5c22; color:#3f7a5c;">${iconSvg('lock')}</div>
         <div class="panel-body">
           <div class="panel-title">The Safe</div>
           <div class="panel-sub">Physical cash &amp; coin</div>
         </div>
         <div class="panel-value">${fmt(safeTotal)}</div>
-        <div class="panel-chevron">${rm ? iconSvg('grip') : iconSvg('chevronRight')}</div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>`,
-    bank: `<button class="panel-btn" data-key="bank" ${rm?'':`onclick="navigate('bank')"`}>
+    bank: `<button class="panel-btn no-select" data-key="bank" onclick="navigate('bank')">
         <div class="panel-icon" style="background:#3b556822; color:#3b5568;">${iconSvg('bank')}</div>
         <div class="panel-body">
           <div class="panel-title">Bank Accounts</div>
           <div class="panel-sub">Checking, savings &amp; more</div>
         </div>
         <div class="panel-value">${fmt(bankTotal)}</div>
-        <div class="panel-chevron">${rm ? iconSvg('grip') : iconSvg('chevronRight')}</div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>`
   };
   const moneyRows = state.moneyOrder.map(k => moneyItems[k] || '').join('');
@@ -1153,7 +1599,6 @@ function renderHome(){
       <div class="net-worth">${fmt(nowNW)}</div>
       ${changeHTML}
 
-      ${rm ? `<p class="empty-note" style="margin-bottom:10px;">Drag to reorder</p>` : ''}
       <div class="section-label">Money</div>
       <div id="moneyList">${moneyRows}</div>
     </div>`;
@@ -1165,14 +1610,14 @@ function renderModules(){
   const rm = state.reorderMode;
 
   const row = (key, page, color, icon, title, sub, value) => `
-    <button class="panel-btn" data-key="${key}" ${rm?'':`onclick="navigate('${page}')"`}>
+    <button class="panel-btn no-select" data-key="${key}" onclick="navigate('${page}')">
         <div class="panel-icon" style="background:${color}22; color:${color};">${icon}</div>
         <div class="panel-body">
           <div class="panel-title">${title}</div>
           <div class="panel-sub">${sub}</div>
         </div>
         <div class="panel-value">${value}</div>
-        <div class="panel-chevron">${rm ? iconSvg('grip') : iconSvg('chevronRight')}</div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>`;
 
   const balancesItems = {
@@ -1181,28 +1626,37 @@ function renderModules(){
   };
   const balancesRows = state.balancesOrder.map(k => balancesItems[k] || '').join('');
 
+  const sectionDefs = {
+    planning: { label: 'Planning', content: row('budget','budget','#6b4a73', iconSvg('target'), 'Budgets', 'Savings goals &amp; targets', state.budgets.length===0 ? 'None yet' : state.budgets.length+' active') },
+    recurring: { label: 'Recurring', content: row('subscription','subscription','#a3483f', iconSvg('repeat'), 'Subscriptions', 'Recurring monthly costs', state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo') },
+    balances: { label: 'Balances', content: `<div id="balancesList">${balancesRows}</div>` }
+  };
+
+  let firstSection = true;
+  const sectionBlocks = state.moduleSectionOrder.map(key => {
+    const def = sectionDefs[key];
+    if (!def) return '';
+    const marginTop = firstSection ? '0' : '20px';
+    firstSection = false;
+    return `<div class="reorder-block no-select" data-key="${key}">
+      <div class="section-label" style="margin-top:${marginTop};">${def.label}</div>
+      ${def.content}
+    </div>`;
+  }).join('');
+
   return `
     ${renderRootTopBar('Modules', true)}
     <div class="content" style="padding-top:6px;">
-      ${rm ? `<p class="empty-note" style="margin-bottom:10px;">Drag to reorder</p>` : ''}
-      <div class="section-label">Planning</div>
-      ${row('budget','budget','#6b4a73', iconSvg('target'), 'Budgets', 'Savings goals &amp; targets', state.budgets.length===0 ? 'None yet' : state.budgets.length+' active')}
-
-      <div class="section-label" style="margin-top:20px;">Recurring</div>
-      ${row('subscription','subscription','#a3483f', iconSvg('repeat'), 'Subscriptions', 'Recurring monthly costs', state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo')}
-
-      <div class="section-label" style="margin-top:20px;">Balances</div>
-      <div id="balancesList">${balancesRows}</div>
+      <div id="moduleSectionList">${sectionBlocks}</div>
     </div>`;
 }
 
-function toggleReorderMode(){
-  state.reorderMode = !state.reorderMode;
+function endReorderMode(){
+  state.reorderMode = false;
   render();
 }
 
 function renderSettings(){
-  const rm = state.reorderMode;
   const restoreConfirm = state.pendingRestore ? `
     <div class="budget-card" style="border-left:4px solid var(--brass); margin-top:16px;">
       <div style="font-weight:600; margin-bottom:4px;">Restore this backup?</div>
@@ -1219,17 +1673,7 @@ function renderSettings(){
 
   return `${renderTopBar('SETTINGS')}
     <div class="content">
-      <div class="section-label">Layout</div>
-      <button class="panel-btn" onclick="toggleReorderMode()">
-        <div class="panel-icon" style="background:#c9a24b22; color:#c9a24b;">${iconSvg('grip')}</div>
-        <div class="panel-body">
-          <div class="panel-title">${rm ? 'Done reordering' : 'Reorder categories'}</div>
-          <div class="panel-sub">${rm ? 'Drag handles are showing on Vault & Modules' : 'Drag The Safe, Bank, Liabilities & Jobs into place'}</div>
-        </div>
-        <div class="panel-chevron">${rm ? iconSvg('check') : iconSvg('chevronRight')}</div>
-      </button>
-
-      <div class="section-label" style="margin-top:20px;">Security</div>
+      <div class="section-label">Security</div>
       <button class="panel-btn" onclick="startPinSetup()">
         <div class="panel-icon" style="background:#c9a24b22; color:#c9a24b;">${iconSvg('lock')}</div>
         <div class="panel-body">
@@ -1267,6 +1711,24 @@ function renderSettings(){
       </button>
       <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="importBackup(this.files[0])" />
       ${restoreConfirm}
+
+      <div class="section-label" style="margin-top:20px;">Ledger</div>
+      <button class="panel-btn" onclick="startLedgerSelectMode()">
+        <div class="panel-icon" style="background:#a3483f22; color:#a3483f;">${iconSvg('trash')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Select &amp; delete entries</div>
+          <div class="panel-sub">Pick individual ledger entries, or select all, to remove</div>
+        </div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
+      </button>
+      <button class="panel-btn" onclick="openDeletedTxModal()">
+        <div class="panel-icon" style="background:#c9a24b22; color:#c9a24b;">${iconSvg('upload')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Recently deleted</div>
+          <div class="panel-sub">${(state.deletedTx||[]).length} removed ${((state.deletedTx||[]).length===1)?'entry':'entries'} — restore if needed</div>
+        </div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
+      </button>
     </div>`;
 }
 
@@ -1280,7 +1742,7 @@ function renderEditableRow(scope, item, idx){
       <button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null; render();">${iconSvg('x')}</button>
     ` : `<button class="row-amount" onclick="startEdit('${scope}','${item.id}', ${item.amount})">${fmt(item.amount)}</button>`;
 
-  return `<div class="row" style="border-left:4px solid ${color}">
+  return `<div class="row sortable-item" data-id="${item.id}" style="border-left:4px solid ${color}">
     <span class="row-label">${escapeHtml(item.name)}</span>
     <div class="row-actions">
       ${editControls}
@@ -1292,7 +1754,7 @@ function renderSafe(){
   const total = computeTotal(state.safeItems);
   return `${renderTopBar('THE SAFE', "showAddForm('safe')")}
     <div class="content">
-      ${state.safeItems.map((it,i)=>renderEditableRow('safe',it,i)).join('')}
+      <div id="safeItemsList">${orderedItems(state.safeItems,state.safeOrder).map((it,i)=>renderEditableRow('safe',it,i)).join('')}</div>
       <div id="addRow-safe"></div>
       <div class="total-bar"><span class="total-label">TOTAL IN SAFE</span><span class="total-value">${fmt(total)}</span></div>
     </div>`;
@@ -1304,7 +1766,7 @@ function renderBank(){
   return `${renderTopBar('BANK ACCOUNTS', "showAddForm('bank')")}
     <div class="content">
       ${empty}
-      ${state.bankAccounts.map((it,i)=>renderEditableRow('bank',it,i)).join('')}
+      <div id="bankItemsList">${orderedItems(state.bankAccounts,state.bankOrder).map((it,i)=>renderEditableRow('bank',it,i)).join('')}</div>
       <div id="addRow-bank"></div>
       <div class="total-bar"><span class="total-label">TOTAL IN BANK</span><span class="total-value">${fmt(total)}</span></div>
     </div>`;
@@ -1355,7 +1817,7 @@ function renderLiabilityRow(it, idx){
   const termsLabel = it.type!=='owe' ? '' : (it.interestRate || it.monthlyPayment)
     ? `<button class="sub-toggle open" style="margin-top:7px;" onclick="editLiabilityTerms('${it.id}')">${it.interestRate||0}% APR · ${fmt(it.monthlyPayment||0)}/mo${payoff && !payoff.tooLow ? ` · payoff in ${payoff.months} mo (${fmt(payoff.totalInterest)} interest)` : payoff && payoff.tooLow ? ' · payment too low to cover interest' : ''}</button>`
     : `<button class="sub-toggle" style="margin-top:7px;" onclick="editLiabilityTerms('${it.id}')">${iconSvg('clock')} Add rate &amp; payment for payoff estimate</button>`;
-  return `<div class="row" style="border-left:4px solid ${color}; flex-direction:column; align-items:stretch;">
+  return `<div class="row sortable-item" data-id="${it.id}" style="border-left:4px solid ${color}; flex-direction:column; align-items:stretch;">
     <div style="display:flex; align-items:center; justify-content:space-between;">
       <span class="row-label">${escapeHtml(it.name)}</span>
       <div class="row-actions">${editControls}</div>
@@ -1367,11 +1829,12 @@ function renderLiabilityRow(it, idx){
 function renderLiabilities(){
   const oweItemsRaw = state.liabilities.filter(i=>i.type==='owe');
   const owedItems = state.liabilities.filter(i=>i.type==='owed');
-  const oweItems = [...oweItemsRaw].sort((a,b) => {
-    if (state.debtSort==='balance') return (a.amount||0)-(b.amount||0);
-    if (state.debtSort==='rate') return (b.interestRate||0)-(a.interestRate||0);
-    return 0;
-  });
+  const oweItems = state.debtSort==='balance'
+    ? [...oweItemsRaw].sort((a,b)=>(a.amount||0)-(b.amount||0))
+    : state.debtSort==='rate'
+      ? [...oweItemsRaw].sort((a,b)=>(b.interestRate||0)-(a.interestRate||0))
+      : orderedItems(oweItemsRaw,state.liabilityOweOrder);
+  const orderedOwedItems = orderedItems(owedItems,state.liabilityOwedOrder);
   const oweTotal = computeTotal(oweItems);
   const owedTotal = computeTotal(owedItems);
   const net = owedTotal - oweTotal;
@@ -1398,11 +1861,11 @@ function renderLiabilities(){
 
       <div class="section-label">YOU OWE</div>
       ${sortRow}
-      ${oweItems.length===0 ? `<p class="empty-note">No debts tracked.</p>` : oweItems.map((it,i)=>renderLiabilityRow(it,i)).join('')}
+      ${oweItems.length===0 ? `<p class="empty-note">No debts tracked.</p>` : `<div id="liabilityOweList">${oweItems.map((it,i)=>renderLiabilityRow(it,i)).join('')}</div>`}
       <div class="total-bar" style="border-color:#a3483f; background:linear-gradient(135deg, rgba(163,72,63,.28), rgba(163,72,63,.06));"><span class="total-label">TOTAL YOU OWE</span><span class="total-value" style="color:#a3483f">${fmt(oweTotal)}</span></div>
 
       <div class="section-label" style="margin-top:22px;">OWED TO YOU</div>
-      ${owedItems.length===0 ? `<p class="empty-note">Nothing tracked here.</p>` : owedItems.map((it,i)=>renderEditableRow('liability',it,i)).join('')}
+      ${owedItems.length===0 ? `<p class="empty-note">Nothing tracked here.</p>` : `<div id="liabilityOwedList">${orderedOwedItems.map((it,i)=>renderEditableRow('liability',it,i)).join('')}</div>`}
       <div class="total-bar" style="border-color:#3f7a5c; background:linear-gradient(135deg, rgba(63,122,92,.28), rgba(63,122,92,.06));"><span class="total-label">TOTAL OWED TO YOU</span><span class="total-value" style="color:#3f7a5c">${fmt(owedTotal)}</span></div>
 
       <div class="total-bar" style="margin-top:12px; border-top:2px solid var(--brass); padding-top:14px;">
@@ -1413,6 +1876,7 @@ function renderLiabilities(){
 }
 
 function renderBudgetCard(b, idx){
+  const rm = state.reorderMode;
   const color = ROW_COLORS[idx % ROW_COLORS.length];
   const isGoal = b.type !== 'recurring';
   const pct = isGoal && b.target>0 ? Math.min(100, Math.round((b.amount/b.target)*100)) : 0;
@@ -1489,7 +1953,7 @@ function renderBudgetCard(b, idx){
     ? `<div class="budget-meta"><span>${fmt(b.amount)} of ${fmt(b.target)} · ${pct}%</span><span>by ${dateLabel}</span></div>`
     : `<div class="budget-meta"><span>Total saved: ${fmt(b.amount)}</span><span>${fmt(installment)}/mo</span></div>`;
 
-  return `<div class="budget-card" style="border-left:4px solid ${color}">
+  return `<div class="budget-card no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
     <div class="budget-head">
       <div class="budget-head-left">
         <button class="expand-btn${isOpen?' open':''}" onclick="toggleBudgetExpand('${b.id}')" aria-label="Toggle details">
@@ -1575,6 +2039,7 @@ function removeExpense(budgetId, expenseId){
 }
 
 function renderSpendingCard(b, idx){
+  const rm = state.reorderMode;
   const color = ROW_COLORS[idx % ROW_COLORS.length];
   const isOpen = !!state.expandedBudgets[b.id];
   const spent = spentThisMonth(b);
@@ -1611,7 +2076,7 @@ function renderSpendingCard(b, idx){
       ${monthExpenses.length===0 ? `<p class="empty-note" style="padding:6px 0;">Nothing logged yet this month.</p>` : monthExpenses.map(e=>`<div class="budget-meta" style="margin-top:0;"><span>${new Date(e.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><span style="display:flex; align-items:center; gap:8px;">${fmt(e.amount)}<button class="icon-btn" style="color:#a3483f" onclick="removeExpense('${b.id}','${e.id}')">${iconSvg('trash')}</button></span></div>`).join('')}
     </div>` : '';
 
-  return `<div class="budget-card" style="border-left:4px solid ${color}">
+  return `<div class="budget-card no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
     <div class="budget-head">
       <div class="budget-head-left">
         <button class="expand-btn${isOpen?' open':''}" onclick="toggleBudgetExpand('${b.id}')" aria-label="Toggle details">
@@ -1633,13 +2098,45 @@ function renderBudget(){
   const recurring = state.budgets.filter(b => b.type === 'recurring');
   const spending = state.budgets.filter(b => b.type === 'spending');
   const goalsMonthlyTotal = goals.reduce((sum,b) => sum + ((b.timeframe==='weekly') ? (Number(b.installment)||0)*52/12 : (Number(b.installment)||0)), 0);
-  const goalsSection = goals.length ? `<div class="section-label" style="margin-top:4px;">GOALS</div><div class="total-bar" style="margin-top:0; margin-bottom:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(goalsMonthlyTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>${goals.map((b,i)=>renderBudgetCard(b,i)).join('')}` : '';
   const recurringTotal = recurring.reduce((sum,b)=>sum+(Number(b.monthlyTarget)||0),0);
-  const recurringSection = recurring.length ? `<div class="section-label" style="margin-top:${goals.length?'20px':'4px'};">ONGOING MONTHLY</div><div class="total-bar" style="margin-top:0; margin-bottom:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(recurringTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>${recurring.map((b,i)=>renderBudgetCard(b,i+goals.length)).join('')}` : '';
   const spendingLimitTotal = spending.reduce((sum,b)=>sum+(Number(b.monthlyLimit)||0),0);
   const spendingSpentTotal = spending.reduce((sum,b)=>sum+spentThisMonth(b),0);
-  const spendingSection = spending.length ? `<div class="section-label" style="margin-top:${(goals.length||recurring.length)?'20px':'4px'};">MONTHLY SPENDING</div><div class="total-bar" style="margin-top:0; margin-bottom:14px;"><span class="total-label">SPENT THIS MONTH</span><span class="total-value">${fmt(spendingSpentTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ ${fmt(spendingLimitTotal)}</span></span></div>${spending.map((b,i)=>renderSpendingCard(b,i+goals.length+recurring.length)).join('')}` : '';
-  return `${renderTopBar('BUDGETS', 'showAddBudgetForm()')}<div class="content">${empty}${goalsSection}${recurringSection}${spendingSection}</div>`;
+
+  const sections = [
+    { key:'goal', label:'GOALS', items: goals, listId:'budgetItems-goal',
+      renderItem: (b,i) => renderBudgetCard(b,i),
+      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(goalsMonthlyTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>` },
+    { key:'recurring', label:'ONGOING MONTHLY', items: recurring, listId:'budgetItems-recurring',
+      renderItem: (b,i) => renderBudgetCard(b,i+goals.length),
+      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(recurringTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>` },
+    { key:'spending', label:'MONTHLY SPENDING', items: spending, listId:'budgetItems-spending',
+      renderItem: (b,i) => renderSpendingCard(b,i+goals.length+recurring.length),
+      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">SPENT THIS MONTH</span><span class="total-value">${fmt(spendingSpentTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ ${fmt(spendingLimitTotal)}</span></span></div>` }
+  ];
+
+  let firstSection = true;
+  const sectionBlocks = sections.map(def => {
+    if (!def.items.length) return '';
+    const marginTop = firstSection ? '4px' : '20px';
+    firstSection = false;
+    const itemsHTML = def.items.map((b,i) => def.renderItem(b,i)).join('');
+    return `<div>
+      <div class="section-label" style="margin-top:${marginTop};">${def.label}</div>
+      <div id="${def.listId}">${itemsHTML}</div>
+      ${def.total}
+    </div>`;
+  }).join('');
+
+  return `${renderTopBar('BUDGETS', 'showAddBudgetForm()')}<div class="content">${empty}${sectionBlocks}</div>`;
+}
+
+function reorderBudgetType(type, newIdOrder){
+  const idxs = [];
+  state.budgets.forEach((b,i) => { if (b.type===type || (type==='goal' && b.type!=='recurring' && b.type!=='spending')) idxs.push(i); });
+  const byId = {};
+  state.budgets.forEach(b => { if (b.type===type || (type==='goal' && b.type!=='recurring' && b.type!=='spending')) byId[b.id] = b; });
+  newIdOrder.forEach((id, n) => { if (byId[id] && idxs[n] !== undefined) state.budgets[idxs[n]] = byId[id]; });
+  save();
 }
 
 function subscriptionBillingLabel(s){
@@ -1728,12 +2225,12 @@ function renderSubscriptions(){
   const soonSection = soon.length ? `<div class="section-label" style="margin-top:20px;">RENEWING SOON</div><div class="budget-card" style="border-left:4px solid var(--brass); margin-bottom:16px;">
     ${soon.map(({s,next}) => `<div class="budget-meta" style="margin-top:0; padding:4px 0;"><span>${escapeHtml(s.name)}</span><span>${fmt(s.amount)} · ${daysUntilLabel(next)}</span></div>`).join('')}
   </div>` : '';
-  return `${renderTopBar('SUBSCRIPTIONS','showAddSubscriptionForm()')}<div class="content">${state.subscriptions.length?state.subscriptions.map((s,i)=>{
+  return `${renderTopBar('SUBSCRIPTIONS','showAddSubscriptionForm()')}<div class="content"><div id="subscriptionList">${state.subscriptions.length?orderedItems(state.subscriptions,state.subscriptionOrder).map((s,i)=>{
     const open=!!state.expandedSubscriptions[s.id], has=!!String(s.notes||'').trim();
     const edit = state.editing && state.editing.scope==='subscription' && state.editing.id===s.id;
     const amountControl = edit ? `<input class="row-input" id="edit-input" inputmode="decimal" value="${s.amount}" onkeydown="if(event.key==='Enter')commitEdit('subscription','${s.id}')" oninput="state.editing.value=this.value"><button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('subscription','${s.id}')">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null;render()">${iconSvg('x')}</button><button class="icon-btn" style="color:#a3483f" onclick="removeItem('subscription','${s.id}')" aria-label="Delete ${escapeHtml(s.name)}">${iconSvg('trash')}</button>` : `<button class="row-amount" onclick="startEdit('subscription','${s.id}',${s.amount})">${fmt(s.amount)}</button>`;
-    return `<div class="sub-row" style="border-left:4px solid ${ROW_COLORS[i%ROW_COLORS.length]}"><div class="sub-row-top"><button class="sub-name" style="background:none; border:none; padding:0; text-align:left; cursor:pointer;" onclick="editSubscription('${s.id}')" title="Edit name, billing &amp; notes">${escapeHtml(s.name)}</button><div class="row-actions">${amountControl}</div></div><div class="sub-due">${escapeHtml(subscriptionRenewalText(s))}</div>${has?`<button class="sub-toggle${open?' open':''}" onclick="toggleSubscriptionExpand('${s.id}')">${iconSvg('chevronDown')} ${open?'Hide notes':'Show notes'}</button>`:''}${open&&has?`<div class="sub-details"><div class="sub-notes-label">NOTES</div><div class="sub-notes">${escapeHtml(s.notes)}</div></div>`:''}</div>`
-  }).join(''):'<p class="empty-note">No subscriptions yet. Add one to start tracking recurring costs.</p>'}<div class="total-bar"><span class="total-label">ESTIMATED MONTHLY COST</span><span style="text-align:right;"><span class="total-value">${fmt(monthly)}</span><div style="font-size:11px; color:var(--bone-dim); margin-top:2px;">${fmt(monthly*12)}/yr</div></span></div>${soonSection}</div>`;
+    return `<div class="sub-row sortable-item" data-id="${s.id}" style="border-left:4px solid ${ROW_COLORS[i%ROW_COLORS.length]}"><div class="sub-row-top"><button class="sub-name" style="background:none; border:none; padding:0; text-align:left; cursor:pointer;" onclick="editSubscription('${s.id}')" title="Edit name, billing &amp; notes">${escapeHtml(s.name)}</button><div class="row-actions">${amountControl}</div></div><div class="sub-due">${escapeHtml(subscriptionRenewalText(s))}</div>${has?`<button class="sub-toggle${open?' open':''}" onclick="toggleSubscriptionExpand('${s.id}')">${iconSvg('chevronDown')} ${open?'Hide notes':'Show notes'}</button>`:''}${open&&has?`<div class="sub-details"><div class="sub-notes-label">NOTES</div><div class="sub-notes">${escapeHtml(s.notes)}</div></div>`:''}</div>`
+  }).join(''):'<p class="empty-note">No subscriptions yet. Add one to start tracking recurring costs.</p>'}</div><div class="total-bar"><span class="total-label">ESTIMATED MONTHLY COST</span><span style="text-align:right;"><span class="total-value">${fmt(monthly)}</span><div style="font-size:11px; color:var(--bone-dim); margin-top:2px;">${fmt(monthly*12)}/yr</div></span></div>${soonSection}</div>`;
 }
 
 function subscriptionControls(prefix, s){
@@ -1895,7 +2392,118 @@ function renderProjectionCard(){
   </div>`;
 }
 
-function renderLedger(){const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date)),filtered=[...filteredAsc].reverse(),latest=filteredAsc.length?filteredAsc[filteredAsc.length-1]:null;const areas=['safe','bank','liability','budget','subscription'];const activeAreas=areas.filter(a=>state.areaFilter[a]);const allSelected=activeAreas.length===areas.length;const rangeTabs=[['1D','1D'],['1W','1W'],['1M','1M'],['1Y','1Y'],['All','all']].map(([label,key])=>`<button class="range-tab${state.ledgerRange===key?' active':''}" onclick="setLedgerRange('${key}')">${label}</button>`).join('');const areaLabel=allSelected?'All areas':(activeAreas.length?activeAreas.map(areaFullLabel).join(', '):'No areas selected');const areaMenu=state.areaDropdownOpen?`<div class="area-menu"><label class="area-option"><input type="checkbox" ${allSelected?'checked':''} onchange="toggleAllAreas()"> All</label>${areas.map(a=>`<label class="area-option"><input type="checkbox" ${state.areaFilter[a]?'checked':''} onchange="toggleArea('${a}')"> ${areaFullLabel(a)}</label>`).join('')}</div>`:'';const rows=filtered.map(t=>`<div class="tx-item"><div><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div><div class="tx-delta" style="color:${t.delta>=0?'#3f7a5c':'#a3483f'}">${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</div></div>`).join('');const chart=filteredAsc.length<2?`<p class="empty-note">Not enough activity in this range to chart yet.</p>`:`<div style="height:200px"><canvas id="netChart"></canvas></div>`;return `${renderRootTopBar('Ledger',true)}<div class="content"><div class="chart-card"><div class="chart-scrub"><div class="chart-scrub-value" id="scrubValue">${latest?fmt(latest.total):fmt(computeNetWorth())}</div><div class="chart-scrub-delta" id="scrubDelta"></div><div class="chart-scrub-date" id="scrubDate">${latest?'Current':'No activity yet'}</div></div>${chart}</div>${renderProjectionCard()}<div class="range-tabs-row">${rangeTabs}</div><div class="area-dropdown"><button class="area-toggle${state.areaDropdownOpen?' open':''}" onclick="toggleAreaDropdown()"><span>${areaLabel}</span>${iconSvg('chevronDown')}</button>${areaMenu}</div><button class="ledger-toggle" onclick="state.ledgerCollapsed=!state.ledgerCollapsed;render()"><span>${state.ledgerCollapsed?'Show':'Hide'} ledger history</span><span class="ledger-count">${filtered.length} ${filtered.length===1?'entry':'entries'}</span></button>${state.ledgerCollapsed?'':`<div class="ledger-list">${rows||'<p class="empty-note">No transactions in this range.</p>'}</div>`}</div>`}
+function renderLedger(){
+  const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const filtered=[...filteredAsc].reverse();
+  const latest=filteredAsc.length?filteredAsc[filteredAsc.length-1]:null;
+  const areas=['safe','bank','liability','budget','subscription'];
+  const activeAreas=areas.filter(a=>state.areaFilter[a]);
+  const allAreasSelected=activeAreas.length===areas.length;
+  const rangeTabs=[['1D','1D'],['1W','1W'],['1M','1M'],['1Y','1Y'],['All','all']].map(([label,key])=>`<button class="range-tab${state.ledgerRange===key?' active':''}" onclick="setLedgerRange('${key}')">${label}</button>`).join('');
+  const areaLabel=allAreasSelected?'All areas':(activeAreas.length?activeAreas.map(areaFullLabel).join(', '):'No areas selected');
+  const areaMenu=state.areaDropdownOpen?`<div class="area-menu"><label class="area-option"><input type="checkbox" ${allAreasSelected?'checked':''} onchange="toggleAllAreas()"> All</label>${areas.map(a=>`<label class="area-option"><input type="checkbox" ${state.areaFilter[a]?'checked':''} onchange="toggleArea('${a}')"> ${areaFullLabel(a)}</label>`).join('')}</div>`:'';
+
+  const selMode = state.ledgerSelectMode;
+  const selectedCount = state.selectedTxIds.length;
+  const allVisibleSelected = filtered.length>0 && filtered.every(t=>state.selectedTxIds.includes(t.id));
+
+  const rows=filtered.map(t=>{
+    const checked = state.selectedTxIds.includes(t.id);
+    const checkbox = selMode ? `<label class="tx-checkbox" onclick="event.stopPropagation()"><input type="checkbox" ${checked?'checked':''} onchange="toggleTxSelected('${t.id}')"></label>` : '';
+    return `<div class="tx-item${selMode?' selectable':''}" ${selMode?`onclick="toggleTxSelected('${t.id}')"`:''}>${checkbox}<div style="flex:1; min-width:0;"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div><div class="tx-delta" style="color:${t.delta>=0?'#3f7a5c':'#a3483f'}">${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</div></div>`;
+  }).join('');
+
+  const chart=filteredAsc.length<2?`<p class="empty-note">Not enough activity in this range to chart yet.</p>`:`<div style="height:200px"><canvas id="netChart"></canvas></div>`;
+
+  const selectBar = selMode ? `<div class="select-bar">
+      <label class="area-option" style="margin:0;"><input type="checkbox" ${allVisibleSelected?'checked':''} onchange="toggleSelectAllTx()"> Select all (${filtered.length})</label>
+      <div style="display:flex; gap:8px;">
+        <button class="chip-btn" onclick="cancelTxSelectMode()">Cancel</button>
+        <button class="chip-btn" style="color:#a3483f; border-color:#a3483f;" onclick="deleteSelectedTx()" ${selectedCount===0?'disabled':''}>Delete (${selectedCount})</button>
+      </div>
+    </div>` : '';
+
+  return `${renderRootTopBar('Ledger',true)}<div class="content"><div class="chart-card"><div class="chart-scrub"><div class="chart-scrub-value" id="scrubValue">${latest?fmt(latest.total):fmt(computeNetWorth())}</div><div class="chart-scrub-delta" id="scrubDelta"></div><div class="chart-scrub-date" id="scrubDate">${latest?'Current':'No activity yet'}</div></div>${chart}</div>${renderProjectionCard()}<div class="range-tabs-row">${rangeTabs}</div><div class="area-dropdown"><button class="area-toggle${state.areaDropdownOpen?' open':''}" onclick="toggleAreaDropdown()"><span>${areaLabel}</span>${iconSvg('chevronDown')}</button>${areaMenu}</div><button class="ledger-toggle" onclick="state.ledgerCollapsed=!state.ledgerCollapsed;render()"><span>${state.ledgerCollapsed?'Show':'Hide'} ledger history</span><span class="ledger-count">${filtered.length} ${filtered.length===1?'entry':'entries'}</span></button>${selectBar}${state.ledgerCollapsed?'':`<div class="ledger-list">${rows||'<p class="empty-note">No transactions in this range.</p>'}</div>`}</div>`;
+}
+
+function startLedgerSelectMode(){
+  state.ledgerSelectMode = true;
+  state.selectedTxIds = [];
+  state.ledgerCollapsed = false;
+  navigate('ledger');
+}
+function cancelTxSelectMode(){
+  state.ledgerSelectMode = false;
+  state.selectedTxIds = [];
+  render();
+}
+function toggleTxSelected(id){
+  const i = state.selectedTxIds.indexOf(id);
+  if (i===-1) state.selectedTxIds.push(id); else state.selectedTxIds.splice(i,1);
+  render();
+}
+function toggleSelectAllTx(){
+  const ids = getFilteredTransactions().map(t=>t.id);
+  const allSelected = ids.length>0 && ids.every(id=>state.selectedTxIds.includes(id));
+  state.selectedTxIds = allSelected ? [] : ids.slice();
+  render();
+}
+function deleteSelectedTx(){
+  if (state.selectedTxIds.length===0) return;
+  const n = state.selectedTxIds.length;
+  const body = `<div class="budget-form">
+    <p class="empty-note" style="text-align:left; padding:0;">Remove ${n} ledger ${n===1?'entry':'entries'}? This only clears the log — it won't change your current balances. You can undo this from Settings afterward.</p>
+    <div class="budget-form-actions">
+      <button class="icon-btn" style="color:#a3483f" onclick="confirmDeleteSelectedTx()">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button>
+    </div>
+  </div>`;
+  openModal('Remove entries?', body);
+}
+function confirmDeleteSelectedTx(){
+  const idSet = new Set(state.selectedTxIds);
+  const toTrash = state.transactions.filter(t=>idSet.has(t.id)).map(t=>({...t, deletedAt:new Date().toISOString()}));
+  state.transactions = state.transactions.filter(t=>!idSet.has(t.id));
+  state.deletedTx = [...(state.deletedTx||[]), ...toTrash];
+  state.selectedTxIds = [];
+  state.ledgerSelectMode = false;
+  closeModal();
+  save(); render();
+}
+function openDeletedTxModal(){
+  const items = (state.deletedTx||[]).slice().sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt));
+  const rows = items.map(t=>`<div class="tx-item"><div style="flex:1; min-width:0;"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div><button class="icon-btn" style="color:#3f7a5c" onclick="restoreDeletedTx('${t.id}')" aria-label="Restore entry">${iconSvg('upload')}</button></div>`).join('');
+  const body = items.length ? `<div class="budget-form">
+      <div class="ledger-list" style="max-height:48vh; overflow:auto;">${rows}</div>
+      <div class="budget-form-actions" style="justify-content:space-between;">
+        <button class="chip-btn" style="color:#a3483f; border-color:#a3483f;" onclick="emptyDeletedTx()">Empty trash</button>
+        <button class="chip-btn" onclick="restoreAllDeletedTx()">Restore all</button>
+      </div>
+    </div>` : `<p class="empty-note">No recently deleted entries.</p>`;
+  openModal(`Recently deleted (${items.length})`, body);
+}
+function restoreDeletedTx(id){
+  const idx = (state.deletedTx||[]).findIndex(t=>t.id===id);
+  if (idx===-1) return;
+  const [tx] = state.deletedTx.splice(idx,1);
+  delete tx.deletedAt;
+  state.transactions.push(tx);
+  save();
+  openDeletedTxModal();
+}
+function restoreAllDeletedTx(){
+  const restored = (state.deletedTx||[]).map(t=>{ const c={...t}; delete c.deletedAt; return c; });
+  state.transactions.push(...restored);
+  state.deletedTx = [];
+  save();
+  closeModal();
+  render();
+}
+function emptyDeletedTx(){
+  state.deletedTx = [];
+  save();
+  closeModal();
+}
 function drawChartIfNeeded(){
   const canvas = document.getElementById('netChart');
   if (!canvas) return;
@@ -2008,6 +2616,16 @@ function attachScrubEvents(chart, sortedData, dateLabels){
 
 let moneySortable = null;
 let balancesSortable = null;
+let moduleSectionSortable = null;
+let budgetItemSortables = {};
+let itemSortables = {};
+
+function showReorderDoneBtn(){
+  state.reorderMode = true;
+  const btn = document.getElementById('reorderDoneBtn');
+  if (btn) btn.style.display = 'block';
+}
+
 function render(){
   const app = document.getElementById('app');
   const tabBar = document.getElementById('tabBar');
@@ -2039,23 +2657,71 @@ function render(){
     if (btn) btn.classList.toggle('active', id === activeTab);
   });
 
+  const doneBtn = document.getElementById('reorderDoneBtn');
+  if (doneBtn) doneBtn.style.display = state.reorderMode ? 'block' : 'none';
+
   if (moneySortable){ moneySortable.destroy(); moneySortable = null; }
   if (balancesSortable){ balancesSortable.destroy(); balancesSortable = null; }
-  if (state.reorderMode && typeof Sortable !== 'undefined'){
+  if (moduleSectionSortable){ moduleSectionSortable.destroy(); moduleSectionSortable = null; }
+  Object.values(budgetItemSortables).forEach(s => s && s.destroy());
+  budgetItemSortables = {};
+  Object.values(itemSortables).forEach(s => s && s.destroy());
+  itemSortables = {};
+
+  if (typeof Sortable !== 'undefined'){
+    const opts = { animation:150, delay:150, delayOnTouchOnly:true, touchStartThreshold:6, ghostClass:'sortable-ghost', dragClass:'sortable-drag' };
+
     const moneyList = document.getElementById('moneyList');
     if (moneyList){
-      moneySortable = new Sortable(moneyList, {
-        animation:150,
-        onEnd: () => { state.moneyOrder = Array.from(moneyList.children).map(el=>el.dataset.key); save(); }
+      moneySortable = new Sortable(moneyList, { ...opts,
+        onStart: showReorderDoneBtn,
+        onEnd: () => { state.moneyOrder = Array.from(moneyList.children).map(el=>el.dataset.key); save(); render(); }
       });
     }
     const balancesList = document.getElementById('balancesList');
     if (balancesList){
-      balancesSortable = new Sortable(balancesList, {
-        animation:150,
-        onEnd: () => { state.balancesOrder = Array.from(balancesList.children).map(el=>el.dataset.key); save(); }
+      balancesSortable = new Sortable(balancesList, { ...opts,
+        onStart: showReorderDoneBtn,
+        onEnd: () => { state.balancesOrder = Array.from(balancesList.children).map(el=>el.dataset.key); save(); render(); }
       });
     }
+    const moduleSectionList = document.getElementById('moduleSectionList');
+    if (moduleSectionList){
+      moduleSectionSortable = new Sortable(moduleSectionList, { ...opts,
+        filter: '#balancesList, #balancesList *', preventOnFilter: false,
+        onStart: showReorderDoneBtn,
+        onEnd: () => { state.moduleSectionOrder = Array.from(moduleSectionList.children).map(el=>el.dataset.key); save(); render(); }
+      });
+    }
+    const makeItemSortable = (id, orderKey) => {
+      const list = document.getElementById(id);
+      if (!list) return;
+      itemSortables[id] = new Sortable(list, { ...opts,
+        onStart: showReorderDoneBtn,
+        onEnd: () => {
+          state[orderKey] = Array.from(list.children).map(el=>el.dataset.id).filter(Boolean);
+          save(); render();
+        }
+      });
+    };
+    makeItemSortable('safeItemsList','safeOrder');
+    makeItemSortable('bankItemsList','bankOrder');
+    makeItemSortable('subscriptionList','subscriptionOrder');
+    makeItemSortable('jobList','jobOrder');
+    if (state.debtSort==='none') {
+      makeItemSortable('liabilityOweList','liabilityOweOrder');
+      makeItemSortable('liabilityOwedList','liabilityOwedOrder');
+    }
+
+    ['goal','recurring','spending'].forEach(type => {
+      const list = document.getElementById(`budgetItems-${type}`);
+      if (list){
+        budgetItemSortables[type] = new Sortable(list, { ...opts,
+          onStart: showReorderDoneBtn,
+          onEnd: () => { reorderBudgetType(type, Array.from(list.children).map(el=>el.dataset.id)); render(); }
+        });
+      }
+    });
   }
 }
 
