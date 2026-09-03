@@ -813,7 +813,7 @@ function updateAmount(scope, id, newAmount){
   const delta = newAmount - item.amount;
   item.amount = newAmount;
   if (delta !== 0){
-    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() - delta;
+    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() - (affectsNetWorth(scope) ? delta : 0);
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: ${item.name}`,
@@ -843,7 +843,7 @@ function removeItem(scope, id){
   const item = list[idx];
   list.splice(idx,1);
   if (item.amount !== 0){
-    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + item.amount;
+    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + (affectsNetWorth(scope) ? item.amount : 0);
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: Removed ${item.name}`,
@@ -2447,15 +2447,27 @@ function projectionRatePerDay(){
     const earliest = sorted[0];
     const earliestDay = new Date(earliest.date); earliestDay.setHours(0,0,0,0);
     daysSpan = Math.max(1, Math.round((today - earliestDay)/86400000));
-    pastValue = earliest.total - earliest.delta;
+    pastValue = earliest.total - (affectsNetWorth(earliest.scope) ? earliest.delta : 0);
   }
-  if (daysSpan <= 0) return null;
+  // A day or two of history isn't a trend — extrapolating it out over months
+  // wildly overstates things (e.g. one $180 day "becomes" $16k over 90 days).
+  // Require at least two weeks of real history before projecting anything.
+  const MIN_DAYS_FOR_PROJECTION = 14;
+  if (daysSpan < MIN_DAYS_FOR_PROJECTION) return null;
   return (now - pastValue) / daysSpan;
 }
 
 function renderProjectionCard(){
   const rate = projectionRatePerDay();
-  if (rate === null) return '';
+  if (rate === null){
+    if ((state.transactions||[]).length){
+      return `<div class="budget-card" style="border-left:4px solid var(--brass); margin-bottom:16px;">
+        <div class="section-label" style="margin-bottom:10px;">PROJECTED NET WORTH</div>
+        <p class="empty-note" style="text-align:left; padding:0;">Not enough ledger history yet to project a trend — check back after a couple weeks of activity.</p>
+      </div>`;
+    }
+    return '';
+  }
   const now = computeNetWorth();
   const proj = (months) => now + rate*30*months;
   return `<div class="budget-card" style="border-left:4px solid var(--brass); margin-bottom:16px;">
@@ -2477,15 +2489,26 @@ function ensureLedgerBaseTotal(){
     state.ledgerBaseTotal=computeNetWorth();
   }
 }
+function affectsNetWorth(scope){
+  // computeNetWorth() only counts safe items, bank accounts, and liabilities.
+  // Budget and subscription edits log a transaction (so they show up in the
+  // ledger) but never actually move net worth, so their delta must NOT be
+  // subtracted when rebuilding the running total below.
+  return scope==='safe' || scope==='bank' || scope==='liability';
+}
 function recalculateLedgerTotals(){
   const txs=[...(state.transactions||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
   if(!txs.length) return;
-  ensureLedgerBaseTotal();
-  let running=Number(state.ledgerBaseTotal)||0;
-  for(const t of txs){
-    running += Number(t.delta)||0;
-    t.total=Math.round(running*100)/100;
+  // Anchor to the real, current net worth and walk backward through history.
+  // This guarantees the most recent ledger point always matches actual balances,
+  // even after entries are deleted (deleting a log entry doesn't undo the real
+  // balance change, so the running total has to be rebuilt from what's true now).
+  let running=computeNetWorth();
+  for(let i=txs.length-1;i>=0;i--){
+    txs[i].total=Math.round(running*100)/100;
+    if (affectsNetWorth(txs[i].scope)) running -= Number(txs[i].delta)||0;
   }
+  state.ledgerBaseTotal=Math.round(running*100)/100;
 }
 
 function renderLedger(){
@@ -2720,7 +2743,7 @@ function drawChartIfNeeded(){
       plugins:{ legend:{display:false}, tooltip:{ enabled:false } },
       scales:{
         x:{ display:false, grid:{ display:false } },
-        y:{ ticks:{ color:'#a8a49a', font:{size:11}, callback:(v)=>'$'+v }, grid:{ color:'#2a2c32' } }
+        y:{ min:0, ticks:{ color:'#a8a49a', font:{size:11}, callback:(v)=>'$'+v }, grid:{ color:'#2a2c32' } }
       }
     }
   });
