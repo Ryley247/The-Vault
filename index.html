@@ -128,7 +128,23 @@
     font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; display:flex; align-items:center; justify-content:center;}
   .keypad-btn:active{background:var(--panel-border);}
 
-  .chart-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:16px; margin-bottom:20px;}
+  .deleted-list{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding:2px;}
+.deleted-tx-card{width:100%;display:flex;align-items:center;gap:11px;text-align:left;padding:13px 12px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:linear-gradient(145deg,rgba(27,29,34,.96),rgba(17,19,23,.98));color:var(--bone);box-shadow:0 1px 0 rgba(255,255,255,.035) inset;transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease;}
+.deleted-tx-card{position:relative;overflow:hidden;cursor:pointer;}
+.deleted-tx-card:active{transform:scale(.985);}
+.deleted-tx-card.selected{border-color:rgba(242,199,92,.7);background:linear-gradient(145deg,rgba(242,199,92,.12),rgba(27,29,34,.98));box-shadow:0 0 0 2px rgba(242,199,92,.08),0 1px 0 rgba(255,255,255,.06) inset;}
+.deleted-tx-check{width:24px;height:24px;flex:0 0 24px;border:1.5px solid rgba(255,255,255,.2);border-radius:8px;display:grid;place-items:center;color:#15100a;}
+.deleted-tx-card.selected .deleted-tx-check{background:var(--gold-metal-bright);border-color:#ffe891;}
+.deleted-tx-check svg{width:15px;height:15px;}
+.deleted-tx-body{flex:1;min-width:0;}
+.deleted-tx-change{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap;font-size:11px;text-align:right;}
+.deleted-tx-change span{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;}
+.deleted-hint{font-size:12px;color:var(--bone-dim);margin-bottom:9px;}
+.deleted-actions{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--divider);}
+.restore-selected-btn{flex:1;}
+.restore-selected-btn:disabled{opacity:.4;cursor:default;}
+.restore-all-btn{color:#ffd76c;border-color:rgba(242,199,92,.35);}
+.chart-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:16px; margin-bottom:20px;}
   .chart-scrub{margin-bottom:10px; text-align:left;}
   .chart-scrub-value{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--bone);}
   .chart-scrub-delta{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; margin-top:2px;}
@@ -389,7 +405,14 @@ body{
 .lock-dot.filled{background:#f2c75c;border-color:#f2c75c;box-shadow:0 0 10px rgba(242,199,92,.22);}
 .keypad{gap:16px;}
 .keypad-btn{border-radius:50%;border-color:rgba(255,255,255,.10);font-size:21px;}
-.keypad-btn:active{background:#292c32;}
+.keypad-btn{position:relative;overflow:hidden;transition:transform .14s ease,background .14s ease,border-color .14s ease,box-shadow .14s ease;}
+.keypad-btn:active{transform:scale(.94);background:#292c32;border-color:rgba(242,199,92,.38);box-shadow:0 0 0 4px rgba(242,199,92,.07);}
+.keypad-ripple{position:absolute;width:10px;height:10px;border-radius:50%;background:rgba(255,236,151,.32);transform:translate(-50%,-50%) scale(0);pointer-events:none;animation:keypadRipple .52s ease-out forwards;}
+@keyframes keypadRipple{to{transform:translate(-50%,-50%) scale(14);opacity:0;}}
+@keyframes unlockReveal{0%{opacity:0;transform:scale(.985);filter:blur(8px);}55%{opacity:1;transform:scale(1.008);filter:blur(0);}100%{opacity:1;transform:scale(1);filter:blur(0);}}
+#app.unlocking{animation:unlockReveal 1.35s cubic-bezier(.2,.8,.2,1) both;}
+.lock-screen{animation:lockScreenIn .35s ease both;}
+@keyframes lockScreenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 button,input,select,textarea{outline:none;}
 ::selection{background:rgba(242,199,92,.28);color:#fff;}
 @media (hover:hover){
@@ -619,6 +642,19 @@ document.addEventListener('pointerdown', function(e){
   setTimeout(()=>ripple.remove(),520);
 },{passive:true});
 </script>
+<script>
+document.addEventListener('pointerdown', function(e){
+  const btn=e.target.closest && e.target.closest('.keypad-btn');
+  if(!btn) return;
+  const r=btn.getBoundingClientRect();
+  const ripple=document.createElement('span');
+  ripple.className='keypad-ripple';
+  ripple.style.left=(e.clientX-r.left)+'px';
+  ripple.style.top=(e.clientY-r.top)+'px';
+  btn.appendChild(ripple);
+  setTimeout(()=>ripple.remove(),540);
+},{passive:true});
+</script>
 <div class="save-toast" id="saveToast">Saved</div>
 <div class="milestone-toast" id="milestoneToast"></div>
 
@@ -662,7 +698,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[] };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null };
 
 function load(){
   try {
@@ -689,6 +725,9 @@ function load(){
     }));
     state.transactions = data.transactions || [];
     state.deletedTx = data.deletedTx || [];
+    state.ledgerBaseTotal = data.ledgerBaseTotal != null ? Number(data.ledgerBaseTotal) : null;
+    ensureLedgerBaseTotal();
+    recalculateLedgerTotals();
     state.seenMilestones = data.seenMilestones || [];
     state.lastBackupAt = data.lastBackupAt || null;
     state.pin = data.pin || null;
@@ -699,6 +738,9 @@ function load(){
     state.balancesOrder = normalizeOrder(data.balancesOrder, defaultBalancesOrder);
     state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
     state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
+    state.budgetGoalOrder = normalizeItemOrder(data.budgetGoalOrder, state.budgets.filter(x=>x.type!=='recurring' && x.type!=='spending'));
+    state.budgetRecurringOrder = normalizeItemOrder(data.budgetRecurringOrder, state.budgets.filter(x=>x.type==='recurring'));
+    state.budgetSpendingOrder = normalizeItemOrder(data.budgetSpendingOrder, state.budgets.filter(x=>x.type==='spending'));
     state.safeOrder = normalizeItemOrder(data.safeOrder, state.safeItems);
     state.bankOrder = normalizeItemOrder(data.bankOrder, state.bankAccounts);
     state.subscriptionOrder = normalizeItemOrder(data.subscriptionOrder, state.subscriptions);
@@ -723,8 +765,8 @@ function save(){
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
       subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
       transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
-      moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
-      seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin
+      moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
+      seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal
     }));
     showSaved();
   } catch(e){
@@ -771,6 +813,7 @@ function updateAmount(scope, id, newAmount){
   const delta = newAmount - item.amount;
   item.amount = newAmount;
   if (delta !== 0){
+    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() - delta;
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: ${item.name}`,
@@ -800,6 +843,7 @@ function removeItem(scope, id){
   const item = list[idx];
   list.splice(idx,1);
   if (item.amount !== 0){
+    if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + item.amount;
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: Removed ${item.name}`,
@@ -1120,8 +1164,8 @@ function exportBackup(){
     safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
     subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
     transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
-    moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder,
-    seenMilestones: state.seenMilestones, pin: state.pin,
+    moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder,
+    seenMilestones: state.seenMilestones, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal,
     exportedAt: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -1192,12 +1236,18 @@ function confirmRestore(){
   state.jobs = (data.jobs || []).map(j => ({...j, taxRate: j.taxRate || 0}));
   state.transactions = data.transactions || [];
   state.deletedTx = data.deletedTx || [];
+  state.ledgerBaseTotal = data.ledgerBaseTotal != null ? Number(data.ledgerBaseTotal) : null;
+  ensureLedgerBaseTotal();
+  recalculateLedgerTotals();
   state.seenMilestones = data.seenMilestones || [];
   state.pin = data.pin || null;
   if (Array.isArray(data.moneyOrder)) state.moneyOrder = normalizeOrder(data.moneyOrder, ['safe','bank']);
   if (Array.isArray(data.balancesOrder)) state.balancesOrder = normalizeOrder(data.balancesOrder, ['liability','income']);
   state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
   state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
+  state.budgetGoalOrder = normalizeItemOrder(data.budgetGoalOrder, state.budgets.filter(x=>x.type!=='recurring' && x.type!=='spending'));
+  state.budgetRecurringOrder = normalizeItemOrder(data.budgetRecurringOrder, state.budgets.filter(x=>x.type==='recurring'));
+  state.budgetSpendingOrder = normalizeItemOrder(data.budgetSpendingOrder, state.budgets.filter(x=>x.type==='spending'));
   state.safeOrder = normalizeItemOrder(data.safeOrder, state.safeItems);
   state.bankOrder = normalizeItemOrder(data.bankOrder, state.bankAccounts);
   state.subscriptionOrder = normalizeItemOrder(data.subscriptionOrder, state.subscriptions);
@@ -1265,8 +1315,8 @@ function renderLockScreen(){
   const keys = [1,2,3,4,5,6,7,8,9,'',0,'back'];
   const keypad = keys.map(k=>{
     if (k==='') return `<div></div>`;
-    if (k==='back') return `<button class="keypad-btn" onclick="backspacePinKey()" aria-label="Backspace">⌫</button>`;
-    return `<button class="keypad-btn" onclick="pressPinKey(${k})">${k}</button>`;
+    if (k==='back') return `<button class="keypad-btn" onclick="backspacePinTap(event)" aria-label="Backspace">⌫</button>`;
+    return `<button class="keypad-btn" onclick="pressPinTap(${k},event)">${k}</button>`;
   }).join('');
   return `<div class="lock-screen">
     ${dialHTML(84)}
@@ -1276,18 +1326,43 @@ function renderLockScreen(){
     <div class="keypad">${keypad}</div>
   </div>`;
 }
-function pressPinKey(d){
-  if (state.pinAttempt.length>=4) return;
-  state.pinAttempt += String(d);
-  if (state.pinAttempt.length===4){
-    if (state.pinAttempt===state.pin){ state.locked=false; state.pinAttempt=''; state.pinError=false; render(); }
-    else {
-      state.pinError=true; render();
-      setTimeout(()=>{ state.pinAttempt=''; state.pinError=false; render(); }, 550);
-    }
-  } else render();
+function updatePinDots(){
+  document.querySelectorAll('.lock-dot').forEach((dot,i)=>{
+    dot.classList.toggle('filled', i < state.pinAttempt.length);
+    dot.classList.toggle('error', !!state.pinError);
+  });
 }
-function backspacePinKey(){ state.pinAttempt = state.pinAttempt.slice(0,-1); state.pinError=false; render(); }
+function pressPinTap(d,event){
+  if (state.locked && !state.unlocking) pressPinKey(d);
+}
+function backspacePinTap(event){
+  if (state.locked && !state.unlocking) backspacePinKey();
+}
+function pressPinKey(d){
+  if (state.pinAttempt.length>=4 || state.unlocking) return;
+  state.pinAttempt += String(d);
+  updatePinDots();
+  if (state.pinAttempt.length===4){
+    if (state.pinAttempt===state.pin){
+      state.locked=false; state.pinAttempt=''; state.pinError=false; state.unlocking=true;
+      render();
+      setTimeout(()=>{
+        state.unlocking=false;
+        const app=document.getElementById('app');
+        if(app) app.classList.remove('unlocking');
+      }, 1400);
+    } else {
+      state.pinError=true; updatePinDots();
+      setTimeout(()=>{ state.pinAttempt=''; state.pinError=false; updatePinDots(); }, 700);
+    }
+  }
+}
+function backspacePinKey(){
+  if (state.unlocking) return;
+  state.pinAttempt = state.pinAttempt.slice(0,-1);
+  state.pinError=false;
+  updatePinDots();
+}
 
 function pinSetupModalBody(){
   const label = state.pinSetupStep==='confirm' ? 'Re-enter your new PIN to confirm' : 'Enter a 4-digit PIN';
@@ -1350,7 +1425,7 @@ function confirmRemovePin(){
 
 function closeModal(){state.modal=null;render()}
 function openModal(title,body){state.modal={title,body};render();setTimeout(()=>{const f=document.querySelector('.modal input,.modal textarea,.modal select');if(f)f.focus()},0)}
-function modalHTML(){return state.modal?`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div class="modal-title">${escapeHtml(state.modal.title)}</div><button class="modal-close" onclick="closeModal()">${iconSvg('x')}</button></div>${state.modal.body}</div></div>`:''}
+function modalHTML(){return state.modal?`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div class="modal-title">${escapeHtml(state.modal.title)}</div><button class="modal-close" onclick="closeModal()">${iconSvg('x')}</button></div><div id="modalBody">${state.modal.body}</div></div></div>`:''}
 function txDescription(t){if(t.description)return t.description;const base=String(t.location||'Account change').replace(/^(Safe|Bank|Budget|Liability|Subscription):\s*/,'').replace(/ removed$/,'');return `${t.delta>=0?'Money added':'Money removed'}: ${base}`}
 function showAddForm(scope){openModal('Add '+scopeLabel(scope),`<div class="budget-form"><input class="add-input" id="modalAddName" placeholder="Name" onkeydown="if(event.key==='Enter')submitModalAdd('${scope}')"><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitModalAdd('${scope}')">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
 function submitModalAdd(scope){const e=document.getElementById('modalAddName'),name=e?e.value.trim():'';if(!name){if(e)e.focus();return}const id=genId();getList(scope).push({id,name,amount:0});if(scope==='safe')state.safeOrder.push(id);else if(scope==='bank')state.bankOrder.push(id);else if(scope==='subscription')state.subscriptionOrder.push(id);else if(scope==='liability')state.liabilityOwedOrder.push(id);closeModal();save();render()}
@@ -1953,7 +2028,7 @@ function renderBudgetCard(b, idx){
     ? `<div class="budget-meta"><span>${fmt(b.amount)} of ${fmt(b.target)} · ${pct}%</span><span>by ${dateLabel}</span></div>`
     : `<div class="budget-meta"><span>Total saved: ${fmt(b.amount)}</span><span>${fmt(installment)}/mo</span></div>`;
 
-  return `<div class="budget-card no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
+  return `<div class="budget-card sortable-item no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
     <div class="budget-head">
       <div class="budget-head-left">
         <button class="expand-btn${isOpen?' open':''}" onclick="toggleBudgetExpand('${b.id}')" aria-label="Toggle details">
@@ -1978,16 +2053,16 @@ function submitBudgetModal(){
   if(type==='recurring'){
     const monthlyTarget=parseFloat(document.getElementById('bmMonthlyAmount').value),notes=document.getElementById('bmMonthlyNotes').value.trim();
     if(!(monthlyTarget>0))return alert('Enter a monthly amount above $0.');
-    state.budgets.push({id:genId(),name,type:'recurring',amount:0,monthlyTarget,timeframe:'monthly',createdAt:new Date().toISOString().slice(0,10),paidThrough:0,contributions:{},skippedPeriods:{},notes});
+    const id=genId(); state.budgets.push({id,name,type:'recurring',amount:0,monthlyTarget,timeframe:'monthly',createdAt:new Date().toISOString().slice(0,10),paidThrough:0,contributions:{},skippedPeriods:{},notes}); state.budgetRecurringOrder.push(id);
   } else if (type==='spending'){
     const monthlyLimit=parseFloat(document.getElementById('bmSpendingLimit').value),notes=document.getElementById('bmSpendingNotes').value.trim();
     if(!(monthlyLimit>0))return alert('Enter a spending limit above $0.');
-    state.budgets.push({id:genId(),name,type:'spending',monthlyLimit,expenses:[],notes,createdAt:new Date().toISOString().slice(0,10)});
+    const id=genId(); state.budgets.push({id,name,type:'spending',monthlyLimit,expenses:[],notes,createdAt:new Date().toISOString().slice(0,10)}); state.budgetSpendingOrder.push(id);
   } else {
     const target=parseFloat(document.getElementById('bmTarget').value),deadline=document.getElementById('bmDate').value,timeframe=document.getElementById('bmTime').value,notes=document.getElementById('bmGoalNotes').value.trim();
     if(!(target>0)||!deadline)return alert('Enter a target amount and date.');
     const createdAt=new Date().toISOString().slice(0,10),totalPeriods=Math.max(1,periodsUntil(createdAt,deadline,timeframe));
-    state.budgets.push({id:genId(),name,type:'goal',amount:0,target,deadline,timeframe,totalPeriods,installment:target/totalPeriods,createdAt,paidThrough:0,contributions:{},skippedPeriods:{},notes});
+    const id=genId(); state.budgets.push({id,name,type:'goal',amount:0,target,deadline,timeframe,totalPeriods,installment:target/totalPeriods,createdAt,paidThrough:0,contributions:{},skippedPeriods:{},notes}); state.budgetGoalOrder.push(id);
   }
   closeModal();save();
 }
@@ -2076,7 +2151,7 @@ function renderSpendingCard(b, idx){
       ${monthExpenses.length===0 ? `<p class="empty-note" style="padding:6px 0;">Nothing logged yet this month.</p>` : monthExpenses.map(e=>`<div class="budget-meta" style="margin-top:0;"><span>${new Date(e.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span><span style="display:flex; align-items:center; gap:8px;">${fmt(e.amount)}<button class="icon-btn" style="color:#a3483f" onclick="removeExpense('${b.id}','${e.id}')">${iconSvg('trash')}</button></span></div>`).join('')}
     </div>` : '';
 
-  return `<div class="budget-card no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
+  return `<div class="budget-card sortable-item no-select" data-id="${b.id}" style="border-left:4px solid ${color}">
     <div class="budget-head">
       <div class="budget-head-left">
         <button class="expand-btn${isOpen?' open':''}" onclick="toggleBudgetExpand('${b.id}')" aria-label="Toggle details">
@@ -2094,9 +2169,9 @@ function renderSpendingCard(b, idx){
 
 function renderBudget(){
   const empty = state.budgets.length===0 ? `<p class="empty-note">No budgets yet. Add a savings goal with a target date, an ongoing monthly amount, or a monthly spending limit.</p>` : '';
-  const goals = state.budgets.filter(b => b.type !== 'recurring' && b.type !== 'spending');
-  const recurring = state.budgets.filter(b => b.type === 'recurring');
-  const spending = state.budgets.filter(b => b.type === 'spending');
+  const goals = orderedItems(state.budgets.filter(b => b.type !== 'recurring' && b.type !== 'spending'), state.budgetGoalOrder);
+  const recurring = orderedItems(state.budgets.filter(b => b.type === 'recurring'), state.budgetRecurringOrder);
+  const spending = orderedItems(state.budgets.filter(b => b.type === 'spending'), state.budgetSpendingOrder);
   const goalsMonthlyTotal = goals.reduce((sum,b) => sum + ((b.timeframe==='weekly') ? (Number(b.installment)||0)*52/12 : (Number(b.installment)||0)), 0);
   const recurringTotal = recurring.reduce((sum,b)=>sum+(Number(b.monthlyTarget)||0),0);
   const spendingLimitTotal = spending.reduce((sum,b)=>sum+(Number(b.monthlyLimit)||0),0);
@@ -2131,11 +2206,11 @@ function renderBudget(){
 }
 
 function reorderBudgetType(type, newIdOrder){
-  const idxs = [];
-  state.budgets.forEach((b,i) => { if (b.type===type || (type==='goal' && b.type!=='recurring' && b.type!=='spending')) idxs.push(i); });
-  const byId = {};
-  state.budgets.forEach(b => { if (b.type===type || (type==='goal' && b.type!=='recurring' && b.type!=='spending')) byId[b.id] = b; });
-  newIdOrder.forEach((id, n) => { if (byId[id] && idxs[n] !== undefined) state.budgets[idxs[n]] = byId[id]; });
+  const items = type==='goal'
+    ? state.budgets.filter(b=>b.type!=='recurring' && b.type!=='spending')
+    : state.budgets.filter(b=>b.type===type);
+  const key = type==='goal' ? 'budgetGoalOrder' : `budget${type[0].toUpperCase()}${type.slice(1)}Order`;
+  state[key] = normalizeItemOrder(newIdOrder, items);
   save();
 }
 
@@ -2392,6 +2467,27 @@ function renderProjectionCard(){
   </div>`;
 }
 
+function ensureLedgerBaseTotal(){
+  if (state.ledgerBaseTotal != null && Number.isFinite(Number(state.ledgerBaseTotal))) return;
+  const all=[...(state.transactions||[]), ...(state.deletedTx||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if (all.length){
+    const first=all[0];
+    state.ledgerBaseTotal=Math.round(((Number(first.total)||0)-(Number(first.delta)||0))*100)/100;
+  } else {
+    state.ledgerBaseTotal=computeNetWorth();
+  }
+}
+function recalculateLedgerTotals(){
+  const txs=[...(state.transactions||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(!txs.length) return;
+  ensureLedgerBaseTotal();
+  let running=Number(state.ledgerBaseTotal)||0;
+  for(const t of txs){
+    running += Number(t.delta)||0;
+    t.total=Math.round(running*100)/100;
+  }
+}
+
 function renderLedger(){
   const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date));
   const filtered=[...filteredAsc].reverse();
@@ -2464,6 +2560,7 @@ function confirmDeleteSelectedTx(){
   const idSet = new Set(state.selectedTxIds);
   const toTrash = state.transactions.filter(t=>idSet.has(t.id)).map(t=>({...t, deletedAt:new Date().toISOString()}));
   state.transactions = state.transactions.filter(t=>!idSet.has(t.id));
+  recalculateLedgerTotals();
   state.deletedTx = [...(state.deletedTx||[]), ...toTrash];
   state.selectedTxIds = [];
   state.ledgerSelectMode = false;
@@ -2472,35 +2569,98 @@ function confirmDeleteSelectedTx(){
 }
 function openDeletedTxModal(){
   const items = (state.deletedTx||[]).slice().sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt));
-  const rows = items.map(t=>`<div class="tx-item"><div style="flex:1; min-width:0;"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div><button class="icon-btn" style="color:#3f7a5c" onclick="restoreDeletedTx('${t.id}')" aria-label="Restore entry">${iconSvg('upload')}</button></div>`).join('');
-  const body = items.length ? `<div class="budget-form">
-      <div class="ledger-list" style="max-height:48vh; overflow:auto;">${rows}</div>
-      <div class="budget-form-actions" style="justify-content:space-between;">
-        <button class="chip-btn" style="color:#a3483f; border-color:#a3483f;" onclick="emptyDeletedTx()">Empty trash</button>
-        <button class="chip-btn" onclick="restoreAllDeletedTx()">Restore all</button>
+  const selected = state.selectedDeletedTxIds || [];
+  const rows = items.map(t=>{
+    const checked=selected.includes(t.id);
+    const changeType=t.delta>=0?'Money added':'Money removed';
+    const changeColor=t.delta>=0?'#43c77a':'#ff5f57';
+    return `<div class="deleted-tx-card${checked?' selected':''}" onclick="deletedTxTap('${t.id}',event)" role="button" tabindex="0" aria-pressed="${checked}">
+      <div class="deleted-tx-check">${checked?iconSvg('check'):''}</div>
+      <div class="deleted-tx-body"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div>
+      <div class="deleted-tx-change" style="color:${changeColor}"><strong>${changeType}</strong><span>${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</span></div>
+    </div>`;
+  }).join('');
+  const selectedCount=selected.length;
+  const body = items.length ? `<div class="budget-form deleted-modal-form">
+      <div class="deleted-hint">Tap an entry to select it for restoration.</div>
+      <div class="deleted-list">${rows}</div>
+      <div class="deleted-actions">
+        <button class="chip-btn" style="color:#ff5f57;border-color:rgba(255,95,87,.35);" onclick="confirmEmptyDeletedTx()">Empty trash</button>
+        <button class="chip-btn restore-selected-btn" onclick="restoreSelectedDeletedTx()" ${selectedCount===0?'disabled':''}>Restore selected${selectedCount?` (${selectedCount})`:''}</button>
+        <button class="chip-btn restore-all-btn" onclick="restoreAllDeletedTx()">Restore all</button>
       </div>
     </div>` : `<p class="empty-note">No recently deleted entries.</p>`;
   openModal(`Recently deleted (${items.length})`, body);
 }
-function restoreDeletedTx(id){
-  const idx = (state.deletedTx||[]).findIndex(t=>t.id===id);
-  if (idx===-1) return;
-  const [tx] = state.deletedTx.splice(idx,1);
-  delete tx.deletedAt;
-  state.transactions.push(tx);
+function refreshDeletedModal(){
+  const body=document.getElementById('modalBody');
+  if(!body || !state.modal) return;
+  const items=(state.deletedTx||[]).slice().sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt));
+  const selected=state.selectedDeletedTxIds||[];
+  const rows=items.map(t=>{
+    const checked=selected.includes(t.id);
+    const changeType=t.delta>=0?'Money added':'Money removed';
+    const changeColor=t.delta>=0?'#43c77a':'#ff5f57';
+    return `<div class="deleted-tx-card${checked?' selected':''}" onclick="deletedTxTap('${t.id}',event)" role="button" tabindex="0" aria-pressed="${checked}">
+      <div class="deleted-tx-check">${checked?iconSvg('check'):''}</div>
+      <div class="deleted-tx-body"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div>
+      <div class="deleted-tx-change" style="color:${changeColor}"><strong>${changeType}</strong><span>${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</span></div>
+    </div>`;
+  }).join('');
+  body.innerHTML=items.length ? `<div class="budget-form deleted-modal-form"><div class="deleted-hint">Tap an entry to select it for restoration.</div><div class="deleted-list">${rows}</div><div class="deleted-actions"><button class="chip-btn" style="color:#ff5f57;border-color:rgba(255,95,87,.35);" onclick="confirmEmptyDeletedTx()">Empty trash</button><button class="chip-btn restore-selected-btn" onclick="restoreSelectedDeletedTx()" ${selected.length===0?'disabled':''}>Restore selected${selected.length?` (${selected.length})`:''}</button><button class="chip-btn restore-all-btn" onclick="restoreAllDeletedTx()">Restore all</button></div></div>` : `<p class="empty-note">No recently deleted entries.</p>`;
+}
+function deletedTxTap(id,event){
+  const card=event?.currentTarget;
+  if(card){
+    const r=card.getBoundingClientRect();
+    const ripple=document.createElement('span'); ripple.className='keypad-ripple';
+    ripple.style.left=((event.clientX-r.left))+'px'; ripple.style.top=((event.clientY-r.top))+'px';
+    ripple.style.background='rgba(255,236,151,.18)'; card.appendChild(ripple);
+    setTimeout(()=>ripple.remove(),560);
+  }
+  setTimeout(()=>toggleDeletedTxSelected(id),90);
+}
+function toggleDeletedTxSelected(id){
+  const selected=state.selectedDeletedTxIds || (state.selectedDeletedTxIds=[]);
+  const i=selected.indexOf(id);
+  if(i===-1) selected.push(id); else selected.splice(i,1);
+  refreshDeletedModal();
+}
+function restoreSelectedDeletedTx(){
+  const ids=new Set(state.selectedDeletedTxIds||[]);
+  if(!ids.size) return;
+  const restored=[];
+  state.deletedTx=(state.deletedTx||[]).filter(t=>{
+    if(ids.has(t.id)){ const c={...t}; delete c.deletedAt; restored.push(c); return false; }
+    return true;
+  });
+  state.transactions.push(...restored);
+  recalculateLedgerTotals();
+  state.selectedDeletedTxIds=[];
   save();
-  openDeletedTxModal();
+  refreshDeletedModal();
+}
+function restoreDeletedTx(id){
+  state.selectedDeletedTxIds=[id];
+  restoreSelectedDeletedTx();
 }
 function restoreAllDeletedTx(){
   const restored = (state.deletedTx||[]).map(t=>{ const c={...t}; delete c.deletedAt; return c; });
   state.transactions.push(...restored);
   state.deletedTx = [];
+  state.selectedDeletedTxIds=[];
+  recalculateLedgerTotals();
   save();
   closeModal();
   render();
 }
+function confirmEmptyDeletedTx(){
+  if(!(state.deletedTx||[]).length) return;
+  openModal('Empty trash?', `<div class="budget-form"><p class="empty-note" style="text-align:left;padding:0;">Permanently delete all ${(state.deletedTx||[]).length} recently deleted ${(state.deletedTx||[]).length===1?'entry':'entries'}? This cannot be undone.</p><div class="budget-form-actions"><button class="icon-btn" style="color:#ff5f57" onclick="emptyDeletedTx()">${iconSvg('trash')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`);
+}
 function emptyDeletedTx(){
   state.deletedTx = [];
+  state.selectedDeletedTxIds = [];
   save();
   closeModal();
 }
@@ -2630,6 +2790,7 @@ function render(){
   const app = document.getElementById('app');
   const tabBar = document.getElementById('tabBar');
   if (state.locked){
+    app.classList.remove('unlocking');
     app.innerHTML = renderLockScreen();
     if (tabBar) tabBar.style.display = 'none';
     return;
@@ -2644,6 +2805,7 @@ function render(){
   else if (state.page==='subscription') app.innerHTML = renderSubscriptions();
   else if (state.page==='income') app.innerHTML = renderIncome();
   else if (state.page==='ledger') { app.innerHTML = renderLedger(); drawChartIfNeeded(); }
+  if (state.unlocking) app.classList.add('unlocking'); else app.classList.remove('unlocking');
   app.insertAdjacentHTML('beforeend', modalHTML());
 
   const hiddenOnPages = ['settings'];
@@ -2713,15 +2875,20 @@ function render(){
       makeItemSortable('liabilityOwedList','liabilityOwedOrder');
     }
 
-    ['goal','recurring','spending'].forEach(type => {
+    const makeBudgetSortable = (type, orderKey) => {
       const list = document.getElementById(`budgetItems-${type}`);
-      if (list){
-        budgetItemSortables[type] = new Sortable(list, { ...opts,
-          onStart: showReorderDoneBtn,
-          onEnd: () => { reorderBudgetType(type, Array.from(list.children).map(el=>el.dataset.id)); render(); }
-        });
-      }
-    });
+      if (!list) return;
+      budgetItemSortables[type] = new Sortable(list, { ...opts,
+        onStart: showReorderDoneBtn,
+        onEnd: () => {
+          state[orderKey] = Array.from(list.children).map(el=>el.dataset.id).filter(Boolean);
+          save(); render();
+        }
+      });
+    };
+    makeBudgetSortable('goal','budgetGoalOrder');
+    makeBudgetSortable('recurring','budgetRecurringOrder');
+    makeBudgetSortable('spending','budgetSpendingOrder');
   }
 }
 
