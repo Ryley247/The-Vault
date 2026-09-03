@@ -235,6 +235,7 @@
     font-size:14px; font-weight:700; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.45);
     transition:all .3s ease; pointer-events:none; z-index:60; max-width:88%;}
   .milestone-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #confettiCanvas{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:55;}
 
   .undo-toast{position:fixed; bottom:calc(78px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
     background:linear-gradient(145deg,#22242a,#17181c); border:1px solid var(--panel-border); color:var(--bone); padding:11px 12px 11px 16px; border-radius:14px; font-size:13px; font-weight:600;
@@ -690,6 +691,7 @@ document.addEventListener('pointerdown', function(e){
 </script>
 <div class="save-toast" id="saveToast">Saved</div>
 <div class="milestone-toast" id="milestoneToast"></div>
+<canvas id="confettiCanvas"></canvas>
 <div class="undo-toast" id="undoToast"><span class="undo-toast-msg" id="undoToastMsg"></span><button class="undo-toast-btn" onclick="performUndo()">Undo</button></div>
 
 <script>
@@ -907,7 +909,9 @@ function liabilitiesNet(){
   return state.liabilities.reduce((s,i)=> s + (i.type==='owed' ? (Number(i.amount)||0) : -(Number(i.amount)||0)), 0);
 }
 function computeNetWorth(){
-  return computeTotal(state.safeItems) + computeTotal(state.bankAccounts) + liabilitiesNet();
+  // Liabilities track who owes you (or what you owe) but the money isn't in hand yet,
+  // so they are excluded from net worth. Only actual Safe + Bank balances count.
+  return computeTotal(state.safeItems) + computeTotal(state.bankAccounts);
 }
 
 function updateAmount(scope, id, newAmount){
@@ -1819,13 +1823,8 @@ function netWorthSnapshotBefore(cutoffDate){
 
 const MILESTONES = [1000,5000,10000,25000,50000,100000,250000,500000,1000000,2500000,5000000];
 function checkMilestones(){
-  const nw = computeNetWorth();
-  for (const m of MILESTONES){
-    if (nw >= m && !state.seenMilestones.includes(m)){
-      state.seenMilestones.push(m);
-      showMilestoneToast(`🎉 Net worth crossed ${fmt(m)}!`);
-    }
-  }
+  // No-op for display — celebrations (including permanent large milestones) are driven
+  // by the home screen net-worth count-up so the gold toast + confetti appear while the number is changing.
 }
 let milestoneTimer;
 function showMilestoneToast(text){
@@ -1835,6 +1834,80 @@ function showMilestoneToast(text){
   t.classList.add('show');
   clearTimeout(milestoneTimer);
   milestoneTimer = setTimeout(()=> t.classList.remove('show'), 4200);
+}
+
+/* ---------- Gold confetti ---------- */
+let confettiParticles = [];
+let confettiRaf = null;
+function fireGoldConfetti(count = 110){
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const originX = window.innerWidth / 2;
+  // Approximate toast center (top safe area + toast height)
+  const originY = 70;
+  const golds = ['#fff4a6','#ffd96a','#f2c75c','#e0b040','#c9a24b','#ffe58a','#b48f37','#f9dc6d'];
+
+  for (let i = 0; i < count; i++){
+    // Full explosion in all directions, with a slight downward bias so it feels like a burst from the toast
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 11;
+    // Extra downward kick so the burst reads as exploding outward + down
+    const downBias = 2.5 + Math.random() * 3.5;
+    confettiParticles.push({
+      x: originX + (Math.random() - 0.5) * 24,
+      y: originY + (Math.random() - 0.5) * 12,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed + downBias,
+      w: 4 + Math.random() * 7,
+      h: 3 + Math.random() * 5,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.4,
+      color: golds[Math.floor(Math.random() * golds.length)],
+      life: 1,
+      decay: 0.011 + Math.random() * 0.013,
+      gravity: 0.22 + Math.random() * 0.1
+    });
+  }
+  if (!confettiRaf) confettiRaf = requestAnimationFrame(tickConfetti);
+}
+function tickConfetti(){
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas){ confettiRaf = null; return; }
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  confettiParticles = confettiParticles.filter(p => {
+    p.vy += p.gravity;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+    p.life -= p.decay;
+    if (p.life <= 0) return false;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    ctx.restore();
+    return true;
+  });
+
+  if (confettiParticles.length) confettiRaf = requestAnimationFrame(tickConfetti);
+  else {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    confettiRaf = null;
+  }
 }
 
 
@@ -2659,9 +2732,11 @@ function getFilteredTransactions(){
   const inRange = t => !cutoff || new Date(t.date) >= cutoff;
   const q = (state.ledgerSearch||'').trim().toLowerCase();
   const matchesSearch = t => !q || txDescription(t).toLowerCase().includes(q) || String(t.location||'').toLowerCase().includes(q);
+  // Synthetic opening balance follows the same date-range rules as everything else.
+  // It only appears when the selected timeframe actually reaches back to the start.
   return state.transactions
     .filter(inRange)
-    .filter(t => state.areaFilter[t.scope])
+    .filter(t => t.synthetic || state.areaFilter[t.scope])
     .filter(matchesSearch);
 }
 function setLedgerSearch(v){ state.ledgerSearch = v; render(); }
@@ -2713,7 +2788,7 @@ function projectionRatePerDay(){
     const earliest = sorted[0];
     const earliestDay = new Date(earliest.date); earliestDay.setHours(0,0,0,0);
     daysSpan = Math.max(1, Math.round((today - earliestDay)/86400000));
-    pastValue = earliest.total - (affectsNetWorth(earliest.scope) ? earliest.delta : 0);
+    pastValue = earliest.total - (isAffectingTx(earliest) ? earliest.delta : 0);
   }
   // A day or two of history isn't a trend — extrapolating it out over months
   // wildly overstates things (e.g. one $180 day "becomes" $16k over 90 days).
@@ -2747,34 +2822,70 @@ function renderProjectionCard(){
 
 function ensureLedgerBaseTotal(){
   if (state.ledgerBaseTotal != null && Number.isFinite(Number(state.ledgerBaseTotal))) return;
-  const all=[...(state.transactions||[]), ...(state.deletedTx||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if (all.length){
-    const first=all[0];
-    state.ledgerBaseTotal=Math.round(((Number(first.total)||0)-(Number(first.delta)||0))*100)/100;
-  } else {
-    state.ledgerBaseTotal=computeNetWorth();
-  }
+  // Prefer a clean $0 start. recalculateLedgerTotals will fold any residual
+  // opening amount into the earliest real transaction.
+  state.ledgerBaseTotal = 0;
 }
 function affectsNetWorth(scope){
-  // computeNetWorth() only counts safe items, bank accounts, and liabilities.
-  // Budget and subscription edits log a transaction (so they show up in the
-  // ledger) but never actually move net worth, so their delta must NOT be
-  // subtracted when rebuilding the running total below.
-  return scope==='safe' || scope==='bank' || scope==='liability';
+  // Only Safe and Bank balances (plus the synthetic Opening balance) move net worth.
+  // Liability, budget, and subscription edits still log to the ledger for history,
+  // but their deltas are ignored when rebuilding the running net-worth total.
+  return scope==='safe' || scope==='bank';
+}
+function isAffectingTx(t){
+  return t.synthetic || affectsNetWorth(t.scope);
 }
 function recalculateLedgerTotals(){
-  const txs=[...(state.transactions||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  if(!txs.length) return;
-  // Anchor to the real, current net worth and walk backward through history.
-  // This guarantees the most recent ledger point always matches actual balances,
-  // even after entries are deleted (deleting a log entry doesn't undo the real
-  // balance change, so the running total has to be rebuilt from what's true now).
-  let running=computeNetWorth();
-  for(let i=txs.length-1;i>=0;i--){
-    txs[i].total=Math.round(running*100)/100;
-    if (affectsNetWorth(txs[i].scope)) running -= Number(txs[i].delta)||0;
+  // Work on the live array so we can insert a synthetic opening entry if needed.
+  const txs = state.transactions;
+  if (!txs.length){
+    state.ledgerBaseTotal = 0;
+    return;
   }
-  state.ledgerBaseTotal=Math.round(running*100)/100;
+
+  // Remove any previous synthetic opening so we can re-create it cleanly.
+  for (let i = txs.length - 1; i >= 0; i--) {
+    if (txs[i].synthetic) txs.splice(i, 1);
+  }
+
+  // Anchor to the real, current net worth and walk backward through history.
+  // This guarantees the most recent ledger point always matches actual balances.
+  let running = computeNetWorth();
+  const sorted = [...txs].sort((a,b) => new Date(a.date) - new Date(b.date));
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    sorted[i].total = Math.round(running * 100) / 100;
+    if (affectsNetWorth(sorted[i].scope)) running -= Number(sorted[i].delta) || 0;
+  }
+  let base = Math.round(running * 100) / 100;
+
+  // If there was money before the first logged change, insert a clean
+  // "Opening balance" transaction so the ledger starts at $0 and the
+  // original first change keeps its real small delta.
+  if (Math.abs(base) > 0.005) {
+    const earliest = sorted[0];
+    const openDate = new Date(new Date(earliest.date).getTime() - 1000).toISOString();
+    const opening = {
+      id: 'opening-balance',
+      date: openDate,
+      location: 'The Vault',
+      description: 'Opening balance',
+      scope: 'safe',
+      delta: base,
+      total: base,
+      synthetic: true
+    };
+    txs.push(opening);
+    // Recompute totals forward from $0
+    running = 0;
+    const allSorted = [...txs].sort((a,b) => new Date(a.date) - new Date(b.date));
+    for (const t of allSorted) {
+      if (affectsNetWorth(t.scope) || t.synthetic) running += Number(t.delta) || 0;
+      t.total = Math.round(running * 100) / 100;
+    }
+    base = 0;
+  }
+
+  state.ledgerBaseTotal = base;
 }
 
 function renderLedger(){
@@ -2850,8 +2961,11 @@ function deleteSelectedTx(){
 }
 function confirmDeleteSelectedTx(){
   const idSet = new Set(state.selectedTxIds);
-  const toTrash = state.transactions.filter(t=>idSet.has(t.id)).map(t=>({...t, deletedAt:new Date().toISOString()}));
-  state.transactions = state.transactions.filter(t=>!idSet.has(t.id));
+  // Never let the synthetic Opening balance be trashed — recalculate will restore it if needed
+  const toTrash = state.transactions
+    .filter(t => idSet.has(t.id) && !t.synthetic)
+    .map(t => ({...t, deletedAt: new Date().toISOString()}));
+  state.transactions = state.transactions.filter(t => !idSet.has(t.id) || t.synthetic);
   recalculateLedgerTotals();
   state.deletedTx = [...(state.deletedTx||[]), ...toTrash];
   state.selectedTxIds = [];
@@ -2996,9 +3110,32 @@ function drawChartIfNeeded(){
 
   const filteredAsc = getFilteredTransactions().sort((a,b)=> new Date(a.date)-new Date(b.date));
   const showTime = state.ledgerRange === '1D' || state.ledgerRange === '1W';
-  const labels = filteredAsc.map(t => new Date(t.date).toLocaleDateString(undefined, showTime ? {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'} : {month:'short', day:'numeric'}));
-  const dateLabels = filteredAsc.map(t => new Date(t.date).toLocaleString(undefined, {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}));
-  const data = filteredAsc.map(t => Math.round(t.total*100)/100);
+
+  // Only show the $0 starting point when the selected timeframe actually includes
+  // the beginning of history (i.e. the opening balance is present in this range).
+  // Short ranges like 1D / 1W should just start at whatever the earliest point
+  // in that window is — forcing $0 there would be misleading.
+  let chartTxs = filteredAsc;
+  let labels, dateLabels, data;
+  const rangeIncludesStart = filteredAsc.length > 0 && filteredAsc[0].synthetic;
+  if (rangeIncludesStart) {
+    const zeroDate = new Date(new Date(filteredAsc[0].date).getTime() - 2000);
+    const zeroPoint = {
+      id: '__zero__',
+      date: zeroDate.toISOString(),
+      location: 'The Vault',
+      description: 'Starting point',
+      scope: 'safe',
+      delta: 0,
+      total: 0,
+      synthetic: true,
+      isZeroAnchor: true
+    };
+    chartTxs = [zeroPoint, ...filteredAsc];
+  }
+  labels = chartTxs.map(t => new Date(t.date).toLocaleDateString(undefined, showTime ? {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'} : {month:'short', day:'numeric'}));
+  dateLabels = chartTxs.map(t => t.isZeroAnchor ? 'Starting point' : new Date(t.date).toLocaleString(undefined, {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}));
+  data = chartTxs.map(t => Math.round(t.total*100)/100);
 
   chartInstance = new Chart(canvas.getContext('2d'), {
     type: 'line',
@@ -3010,12 +3147,18 @@ function drawChartIfNeeded(){
       plugins:{ legend:{display:false}, tooltip:{ enabled:false } },
       scales:{
         x:{ display:false, grid:{ display:false } },
-        y:{ min:0, ticks:{ color:'#a8a49a', font:{size:11}, callback:(v)=>'$'+v }, grid:{ color:'#2a2c32' } }
+        y:{
+          // Only pin the floor to $0 when the chart actually includes the starting point.
+          // Short ranges should auto-scale so the line is readable.
+          ...(rangeIncludesStart ? { min: 0 } : {}),
+          ticks:{ color:'#a8a49a', font:{size:11}, callback:(v)=>'$'+v },
+          grid:{ color:'#2a2c32' }
+        }
       }
     }
   });
 
-  attachScrubEvents(chartInstance, filteredAsc, dateLabels);
+  attachScrubEvents(chartInstance, chartTxs, dateLabels);
 }
 
 function attachScrubEvents(chart, sortedData, dateLabels){
@@ -3036,11 +3179,19 @@ function attachScrubEvents(chart, sortedData, dateLabels){
     scrubIndex = idx;
     chart.update('none');
     const point = sortedData[idx];
-    const positive = point.delta >= 0;
     if (valueEl) valueEl.textContent = fmt(point.total);
     if (deltaEl){
-      deltaEl.textContent = `${escapeHtml(point.location)} · ${positive?'+':'-'}${fmt(Math.abs(point.delta)).slice(1)}`;
-      deltaEl.style.color = positive ? '#3f7a5c' : '#a3483f';
+      if (point.isZeroAnchor) {
+        deltaEl.textContent = 'Starting point';
+        deltaEl.style.color = 'var(--bone-dim)';
+      } else if (point.synthetic) {
+        deltaEl.textContent = `Opening balance · +${fmt(Math.abs(point.delta)).slice(1)}`;
+        deltaEl.style.color = '#3f7a5c';
+      } else {
+        const positive = point.delta >= 0;
+        deltaEl.textContent = `${escapeHtml(point.location||'')} · ${positive?'+':'-'}${fmt(Math.abs(point.delta)).slice(1)}`;
+        deltaEl.style.color = positive ? '#3f7a5c' : '#a3483f';
+      }
     }
     if (dateEl) dateEl.textContent = dateLabels[idx];
   }
@@ -3086,11 +3237,35 @@ function animateNetWorthFigure(){
   if (start === target || Math.abs(target-start) < 0.005) return;
   const duration = 1100;
   const t0 = performance.now();
+  let prevVal = start;
+  let highestToastShown = Math.floor(start / 100) * 100; // only toast higher crossings
+
   function tick(now){
     const p = Math.min(1, (now-t0)/duration);
     const eased = 1 - Math.pow(1-p, 3);
     const val = start + (target-start)*eased;
     el.textContent = fmt(val);
+
+    // Detect upward $100 threshold crossings while the number is animating
+    if (target > start) {
+      const prevFloor = Math.floor(prevVal / 100) * 100;
+      const currFloor = Math.floor(val / 100) * 100;
+      if (currFloor > prevFloor && currFloor > highestToastShown) {
+        // Crossed one or more $100 marks — toast the highest one this frame
+        const m = currFloor;
+        highestToastShown = m;
+        if (MILESTONES.includes(m) && !state.seenMilestones.includes(m)) {
+          state.seenMilestones.push(m);
+          showMilestoneToast(`🎉 Net worth crossed ${fmt(m)}!`);
+          save();
+        } else {
+          showMilestoneToast(`✨ Crossed ${fmt(m)}!`);
+        }
+        fireGoldConfetti();
+      }
+    }
+
+    prevVal = val;
     if (p < 1) requestAnimationFrame(tick);
     else el.textContent = fmt(target);
   }
