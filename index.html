@@ -128,17 +128,22 @@
     font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; display:flex; align-items:center; justify-content:center;}
   .keypad-btn:active{background:var(--panel-border);}
 
-  .deleted-list{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding:2px;}
-.deleted-tx-card{width:100%;display:flex;align-items:center;gap:11px;text-align:left;padding:13px 12px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:linear-gradient(145deg,rgba(27,29,34,.96),rgba(17,19,23,.98));color:var(--bone);box-shadow:0 1px 0 rgba(255,255,255,.035) inset;transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease;}
-.deleted-tx-card{position:relative;overflow:hidden;cursor:pointer;}
+  .modal:has(.deleted-modal-form){display:flex;flex-direction:column;overflow:hidden;}
+.modal:has(.deleted-modal-form) #modalBody{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+.deleted-modal-form{flex:1;min-height:0;display:flex;flex-direction:column;}
+.deleted-list{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:auto;padding:2px;}
+.deleted-tx-card{width:100%;display:flex;align-items:flex-start;gap:12px;text-align:left;padding:16px 14px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:linear-gradient(145deg,rgba(27,29,34,.96),rgba(17,19,23,.98));color:var(--bone);box-shadow:0 1px 0 rgba(255,255,255,.035) inset;transition:transform .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease;}
+.deleted-tx-card{position:relative;cursor:pointer;}
 .deleted-tx-card:active{transform:scale(.985);}
 .deleted-tx-card.selected{border-color:rgba(242,199,92,.7);background:linear-gradient(145deg,rgba(242,199,92,.12),rgba(27,29,34,.98));box-shadow:0 0 0 2px rgba(242,199,92,.08),0 1px 0 rgba(255,255,255,.06) inset;}
-.deleted-tx-check{width:24px;height:24px;flex:0 0 24px;border:1.5px solid rgba(255,255,255,.2);border-radius:8px;display:grid;place-items:center;color:#15100a;}
+.deleted-tx-check{width:26px;height:26px;flex:0 0 26px;margin-top:2px;border:1.5px solid rgba(255,255,255,.2);border-radius:8px;display:grid;place-items:center;color:#15100a;}
 .deleted-tx-card.selected .deleted-tx-check{background:var(--gold-metal-bright);border-color:#ffe891;}
-.deleted-tx-check svg{width:15px;height:15px;}
-.deleted-tx-body{flex:1;min-width:0;}
-.deleted-tx-change{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap;font-size:11px;text-align:right;}
-.deleted-tx-change span{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;}
+.deleted-tx-check svg{width:16px;height:16px;}
+.deleted-tx-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+.deleted-tx-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.deleted-tx-title{flex:1 1 auto;min-width:0;font-size:15.5px;font-weight:700;line-height:1.4;word-break:break-word;}
+.deleted-tx-amount{font-family:'JetBrains Mono',monospace;font-size:15.5px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+.deleted-tx-meta{font-size:12.5px;color:var(--bone-dim);line-height:1.5;word-break:break-word;}
 .deleted-hint{font-size:12px;color:var(--bone-dim);margin-bottom:9px;}
 .deleted-actions{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--divider);}
 .restore-selected-btn{flex:1;}
@@ -230,6 +235,34 @@
     font-size:14px; font-weight:700; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.45);
     transition:all .3s ease; pointer-events:none; z-index:60; max-width:88%;}
   .milestone-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .undo-toast{position:fixed; bottom:calc(78px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:linear-gradient(145deg,#22242a,#17181c); border:1px solid var(--panel-border); color:var(--bone); padding:11px 12px 11px 16px; border-radius:14px; font-size:13px; font-weight:600;
+    transition:all .25s ease; pointer-events:none; z-index:70; box-shadow:0 12px 30px rgba(0,0,0,.45); display:flex; align-items:center; gap:12px; max-width:90%;}
+  .undo-toast.show{opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto;}
+  .undo-toast-btn{color:var(--brass); font-weight:700; padding:6px 12px; border-radius:999px; background:rgba(201,162,75,.14); flex-shrink:0; white-space:nowrap;}
+  .undo-toast-msg{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  .reminder-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:16px;}
+  .reminder-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0;}
+  .reminder-row+.reminder-row{border-top:1px solid var(--divider);}
+  .reminder-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+  .reminder-label{font-size:13.5px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .reminder-when{font-size:12px; color:var(--bone-dim); font-family:'JetBrains Mono',monospace; flex-shrink:0;}
+
+  .ledger-search{position:relative; margin-bottom:10px;}
+  .ledger-search input{width:100%; padding:10px 14px 10px 38px; border-radius:12px; border:1px solid var(--panel-border); background:var(--panel); color:var(--bone); font-size:13.5px;}
+  .ledger-search input:focus{outline:none; border-color:var(--brass-dim);}
+  .ledger-search svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--bone-dim); pointer-events:none;}
+
+  .nw-figure{transition:opacity .15s ease;}
+
+  .snapshot-card{padding:10px 0; border-top:1px solid var(--divider);}
+  .snapshot-card:first-of-type{border-top:none;}
+  .diff-list{list-style:none; margin:2px 0 0; padding:0; display:flex; flex-direction:column; gap:4px;}
+  .diff-list li{font-size:12.5px; color:var(--bone-dim); position:relative; padding-left:12px;}
+  .diff-list li::before{content:'•'; position:absolute; left:0; color:var(--brass-dim);}
+  .diff-list-empty{font-size:12.5px; color:var(--bone-dim); margin:2px 0 0; font-style:italic;}
 
 .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.64);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 14px 16px;animation:fadeIn .16s ease}.modal{width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:slideDown .2s ease}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.modal-title{font-family:'Oswald',sans-serif;font-size:21px;letter-spacing:.04em}.modal-close{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--bone-dim);display:grid;place-items:center}.modal .budget-form{margin:0}.modal .budget-form-actions{margin-top:16px;padding-top:14px;border-top:1px solid var(--divider)}.notes-label{font-size:10.5px;color:var(--brass);font-weight:700;letter-spacing:.07em;margin:4px 0}.notes-box{min-height:88px;resize:vertical;line-height:1.45}.sub-notes{margin-top:9px;padding:10px 12px;background:var(--bg);border:1px solid var(--divider);border-radius:11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}.goal-spacer{height:9px}.ledger-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;margin:12px 0 2px;border:1px solid var(--panel-border);border-radius:13px;background:var(--panel);font-size:13px;font-weight:700}.ledger-count{font-size:11px;color:var(--brass)}.tx-description{font-size:13.5px;font-weight:700}.tx-context{font-size:11.5px;color:var(--bone-dim);margin-top:3px}.tx-date{font-size:11.5px;color:var(--bone-dim);margin-top:3px}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideDown{from{transform:translateY(-20px);opacity:.6}to{transform:translateY(0);opacity:1}}@media(min-width:521px){.modal-backdrop{align-items:center}.modal{max-height:82vh}}
 
@@ -657,6 +690,7 @@ document.addEventListener('pointerdown', function(e){
 </script>
 <div class="save-toast" id="saveToast">Saved</div>
 <div class="milestone-toast" id="milestoneToast"></div>
+<div class="undo-toast" id="undoToast"><span class="undo-toast-msg" id="undoToastMsg"></span><button class="undo-toast-btn" onclick="performUndo()">Undo</button></div>
 
 <script>
 function setVH(){ document.documentElement.style.setProperty('--vh', window.innerHeight * 0.01 + 'px'); }
@@ -698,7 +732,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false };
 
 function load(){
   try {
@@ -759,20 +793,90 @@ function load(){
   }
 }
 
+/* ---------- auto-backup snapshots ----------
+   Separate from the manual export/import: a rotating local history that
+   protects against a bad edit, a bug, or a corrupted save — without you
+   having to remember to export anything. Best-effort; never blocks a save. */
+const SNAPSHOT_KEY = 'vault-tracker-snapshots';
+const SNAPSHOT_MIN_GAP_MS = 15*60*1000;
+const SNAPSHOT_MAX = 8;
+function autoSnapshot(dataStr){
+  try{
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    const last = list[list.length-1];
+    if (last && (now - last.at) < SNAPSHOT_MIN_GAP_MS) return;
+    list.push({ at: now, data: dataStr });
+    while (list.length > SNAPSHOT_MAX) list.shift();
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(list));
+  } catch(e){ /* storage full or unavailable — skip silently, this is a bonus safety net, not primary storage */ }
+}
+function getSnapshots(){
+  try{
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+function relativeTimeLabel(ts){
+  const diffMin = Math.round((Date.now()-ts)/60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin/60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr/24);
+  return `${diffDay}d ago`;
+}
+function restoreFromSnapshot(idx){
+  const list = getSnapshots();
+  const snap = list[idx];
+  if (!snap) return;
+  try{
+    state.pendingRestore = JSON.parse(snap.data);
+    render();
+  } catch(e){
+    alert("That auto-backup couldn't be read.");
+  }
+}
+
 function save(){
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    const payload = JSON.stringify({
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
       subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
       transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
       moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
       seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal
-    }));
+    });
+    localStorage.setItem(STORAGE_KEY, payload);
+    autoSnapshot(payload);
     showSaved();
   } catch(e){
     console.error('Save failed', e);
     alert("Couldn't save your change. Your browser storage may be full or private-browsing is blocking it.");
   }
+}
+
+/* ---------- undo ---------- */
+let pendingUndo = null;
+let undoTimer = null;
+function showUndoToast(message, undoFn){
+  pendingUndo = undoFn;
+  const t = document.getElementById('undoToast');
+  const m = document.getElementById('undoToastMsg');
+  if (!t || !m) return;
+  m.textContent = message;
+  t.classList.add('show');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(()=>{ t.classList.remove('show'); pendingUndo=null; }, 6500);
+}
+function performUndo(){
+  const fn = pendingUndo;
+  pendingUndo = null;
+  clearTimeout(undoTimer);
+  const t = document.getElementById('undoToast');
+  if (t) t.classList.remove('show');
+  if (typeof fn === 'function') fn();
 }
 
 let toastTimer;
@@ -842,10 +946,12 @@ function removeItem(scope, id){
   if (idx===-1) return;
   const item = list[idx];
   list.splice(idx,1);
+  let createdTxId = null;
   if (item.amount !== 0){
     if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + (affectsNetWorth(scope) ? item.amount : 0);
+    createdTxId = genId();
     state.transactions.push({
-      id: genId(), date: new Date().toISOString(),
+      id: createdTxId, date: new Date().toISOString(),
       location: `${scopeLabel(scope)}: Removed ${item.name}`,
       description: `Money removed: ${item.name}`,
       scope, delta: -item.amount, total: computeNetWorth()
@@ -853,6 +959,15 @@ function removeItem(scope, id){
   }
   save(); render();
   checkMilestones();
+  // Deletions here are otherwise permanent (unlike ledger entries, which go to
+  // a trash you can restore from). Give a brief window to undo a mis-tap.
+  showUndoToast(`Removed "${item.name}"`, ()=>{
+    const freshList = getList(scope);
+    freshList.splice(Math.min(idx, freshList.length), 0, item);
+    if (createdTxId) state.transactions = state.transactions.filter(t=>t.id!==createdTxId);
+    recalculateLedgerTotals();
+    save(); render();
+  });
 }
 
 /* ---------- budgets ---------- */
@@ -1201,6 +1316,81 @@ function exportLedgerCSV(){
   URL.revokeObjectURL(url);
 }
 
+// Describes what restoring a given snapshot would actually undo, compared to
+// the app's current state right now — so "Restore" isn't a leap of faith.
+function diffScopeLines(label, curList, snapList, amountField){
+  const lines = [];
+  const curById = Object.fromEntries((curList||[]).map(i=>[i.id,i]));
+  const snapById = Object.fromEntries((snapList||[]).map(i=>[i.id,i]));
+  (curList||[]).forEach(i=>{
+    if (!snapById[i.id]) lines.push(`Remove ${label.toLowerCase()} "${i.name}"`);
+  });
+  (snapList||[]).forEach(i=>{
+    if (!curById[i.id]) lines.push(`Bring back ${label.toLowerCase()} "${i.name}"`);
+  });
+  if (amountField){
+    (curList||[]).forEach(i=>{
+      const s = snapById[i.id];
+      if (s && Number(s[amountField]||0) !== Number(i[amountField]||0)){
+        lines.push(`${i.name}: ${fmt(Number(i[amountField])||0)} → ${fmt(Number(s[amountField])||0)}`);
+      }
+    });
+  }
+  return lines;
+}
+function summarizeSnapshotDiff(snapshotData){
+  const lines = [];
+  const curNW = computeNetWorth();
+  let snapNW = null;
+  try{
+    const safe=(snapshotData.safeItems||[]).reduce((s,i)=>s+(Number(i.amount)||0),0);
+    const bank=(snapshotData.bankAccounts||[]).reduce((s,i)=>s+(Number(i.amount)||0),0);
+    const liab=(snapshotData.liabilities||[]).reduce((s,i)=> s + (i.type==='owed'?(Number(i.amount)||0):-(Number(i.amount)||0)),0);
+    snapNW = safe+bank+liab;
+  } catch(e){}
+
+  lines.push(...diffScopeLines('Safe item', state.safeItems, snapshotData.safeItems, 'amount'));
+  lines.push(...diffScopeLines('Bank account', state.bankAccounts, snapshotData.bankAccounts, 'amount'));
+  lines.push(...diffScopeLines('Subscription', state.subscriptions, snapshotData.subscriptions, 'amount'));
+  lines.push(...diffScopeLines('Liability', state.liabilities, snapshotData.liabilities, 'amount'));
+  lines.push(...diffScopeLines('Budget', state.budgets, snapshotData.budgets, null));
+
+  const curTxCount = (state.transactions||[]).length;
+  const snapTxCount = (snapshotData.transactions||[]).length;
+  if (curTxCount !== snapTxCount){
+    const d = curTxCount - snapTxCount;
+    lines.push(d>0 ? `${d} newer ledger ${d===1?'entry':'entries'} will be removed` : `${-d} ledger ${(-d)===1?'entry':'entries'} will come back`);
+  }
+  if (snapNW!=null && Math.abs(snapNW-curNW) > 0.004){
+    lines.unshift(`Net worth: ${fmt(curNW)} → ${fmt(snapNW)}`);
+  }
+  return lines;
+}
+
+function showVersionHistoryModal(){
+  const list = getSnapshots();
+  if (!list.length){
+    openModal('Version History', `<p class="empty-note" style="text-align:left; padding:0;">No auto-backups yet — one is captured automatically as you use the app.</p>`);
+    return;
+  }
+  const rows = list.slice().reverse().map((snap, revIdx) => {
+    const idx = list.length - 1 - revIdx;
+    let diffLines = [];
+    try{ diffLines = summarizeSnapshotDiff(JSON.parse(snap.data)); } catch(e){}
+    const diffHTML = diffLines.length
+      ? `<ul class="diff-list">${diffLines.slice(0,6).map(l=>`<li>${escapeHtml(l)}</li>`).join('')}${diffLines.length>6?`<li>+ ${diffLines.length-6} more change${diffLines.length-6===1?'':'s'}</li>`:''}</ul>`
+      : `<p class="diff-list-empty">No changes since this snapshot — restoring won't undo anything.</p>`;
+    return `<div class="snapshot-card">
+      <div class="reminder-row" style="padding-top:0;">
+        <div class="reminder-label" style="font-weight:700;">${relativeTimeLabel(snap.at)}</div>
+        <button class="chip-btn" onclick="closeModal();restoreFromSnapshot(${idx})" ${diffLines.length?'':'disabled'}>Restore</button>
+      </div>
+      ${diffHTML}
+    </div>`;
+  }).join('');
+  openModal('Version History', `<div class="budget-form"><p class="empty-note" style="text-align:left; padding:0; margin-bottom:10px;">What restoring each snapshot would undo, compared to right now.</p>${rows}</div>`);
+}
+
 function importBackup(file){
   if (!file) return;
   const reader = new FileReader();
@@ -1316,6 +1506,7 @@ function renderLockScreen(){
   const keypad = keys.map(k=>{
     if (k==='') return `<div></div>`;
     if (k==='back') return `<button class="keypad-btn" onclick="backspacePinTap(event)" aria-label="Backspace">⌫</button>`;
+    if (k===0) return `<button class="keypad-btn" onclick="pressPinTap(0,event)" onpointerdown="startZeroHold()" onpointerup="cancelZeroHold()" onpointerleave="cancelZeroHold()" onpointercancel="cancelZeroHold()">0</button>`;
     return `<button class="keypad-btn" onclick="pressPinTap(${k},event)">${k}</button>`;
   }).join('');
   return `<div class="lock-screen">
@@ -1338,12 +1529,32 @@ function pressPinTap(d,event){
 function backspacePinTap(event){
   if (state.locked && !state.unlocking) backspacePinKey();
 }
+let zeroHoldTimer = null;
+let bypassResetTimer = null;
+const ZERO_HOLD_MS = 10000;
+const BYPASS_WINDOW_MS = 12000;
+function startZeroHold(){
+  if (!(state.locked && !state.unlocking)) return;
+  clearTimeout(zeroHoldTimer);
+  zeroHoldTimer = setTimeout(()=>{
+    state.pinBypassMode = true;
+    clearTimeout(bypassResetTimer);
+    bypassResetTimer = setTimeout(()=>{ state.pinBypassMode = false; }, BYPASS_WINDOW_MS);
+    if (navigator.vibrate) navigator.vibrate(25);
+  }, ZERO_HOLD_MS);
+}
+function cancelZeroHold(){
+  clearTimeout(zeroHoldTimer);
+}
 function pressPinKey(d){
   if (state.pinAttempt.length>=4 || state.unlocking) return;
   state.pinAttempt += String(d);
   updatePinDots();
   if (state.pinAttempt.length===4){
-    if (state.pinAttempt===state.pin){
+    const bypassOk = state.pinBypassMode && state.pinAttempt === '0000';
+    if (state.pinAttempt===state.pin || bypassOk){
+      state.pinBypassMode = false;
+      clearTimeout(bypassResetTimer);
       state.locked=false; state.pinAttempt=''; state.pinError=false; state.unlocking=true;
       render();
       setTimeout(()=>{
@@ -1627,6 +1838,45 @@ function showMilestoneToast(text){
 }
 
 
+function upcomingItems(){
+  const items = [];
+  const now = new Date();
+  (state.subscriptions||[]).forEach(s => {
+    const d = nextRenewalDate(s);
+    if (!d) return;
+    const days = Math.ceil((d - now) / 86400000);
+    if (days <= 7){
+      items.push({ label: s.name, amount: Number(s.amount)||0, days, color: 'var(--plum)' });
+    }
+  });
+  (state.budgets||[]).forEach(b => {
+    if (b.type === 'goal' && b.deadline){
+      const d = new Date(b.deadline + 'T00:00:00');
+      const days = Math.ceil((d - now) / 86400000);
+      if (days >= 0 && days <= 7){
+        items.push({ label: b.name, amount: null, days, color: 'var(--brass)', note: 'goal deadline' });
+      }
+    }
+  });
+  return items.sort((a,b)=>a.days-b.days);
+}
+function renderUpcomingCard(){
+  const items = upcomingItems();
+  if (!items.length){
+    return `<div class="reminder-card"><div class="section-label" style="margin-bottom:4px;">Coming up</div><p class="empty-note" style="text-align:left; padding:6px 0 0;">Nothing due in the next 7 days.</p></div>`;
+  }
+  const rows = items.map(it => {
+    const when = it.days<=0 ? 'Today' : it.days===1 ? 'Tomorrow' : `In ${it.days}d`;
+    const detail = it.amount!=null ? fmt(it.amount) : (it.note||'');
+    return `<div class="reminder-row">
+      <div class="reminder-dot" style="background:${it.color}"></div>
+      <div class="reminder-label">${escapeHtml(it.label)}${detail?` · ${escapeHtml(detail)}`:''}</div>
+      <div class="reminder-when">${when}</div>
+    </div>`;
+  }).join('');
+  return `<div class="reminder-card"><div class="section-label" style="margin-bottom:4px;">Coming up</div>${rows}</div>`;
+}
+
 function renderHome(){
   const safeTotal = computeTotal(state.safeItems);
   const bankTotal = computeTotal(state.bankAccounts);
@@ -1671,8 +1921,9 @@ function renderHome(){
       ${dialHTML(76)}
       <div class="home-title">THE VAULT</div>
       <div class="home-sub">Net worth tracked</div>
-      <div class="net-worth">${fmt(nowNW)}</div>
+      <div class="net-worth nw-figure" id="netWorthFigure" data-value="${nowNW}">${fmt(nowNW)}</div>
       ${changeHTML}
+      ${renderUpcomingCard()}
 
       <div class="section-label">Money</div>
       <div id="moneyList">${moneyRows}</div>
@@ -1785,6 +2036,14 @@ function renderSettings(){
         <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>
       <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="importBackup(this.files[0])" />
+      <button class="panel-btn" onclick="showVersionHistoryModal()">
+        <div class="panel-icon" style="background:#c9a24b22; color:#c9a24b;">${iconSvg('clock')}</div>
+        <div class="panel-body">
+          <div class="panel-title">Version history</div>
+          <div class="panel-sub">Automatic snapshots — roll back a bad edit</div>
+        </div>
+        <div class="panel-chevron">${iconSvg('chevronRight')}</div>
+      </button>
       ${restoreConfirm}
 
       <div class="section-label" style="margin-top:20px;">Ledger</div>
@@ -2260,7 +2519,10 @@ function subscriptionMonthlyCost(s){
 function nextRenewalDate(s){
   const b = s.billing || 'Monthly';
   const today = new Date(); today.setHours(0,0,0,0);
-  if (b === 'Monthly'){
+  if (b === 'Monthly' || b === 'Quarterly' || b === 'Semiannual'){
+    // Quarterly/Semiannual only ever store a day-of-month (no anchor month),
+    // same ambiguity the app's own "Renews on the Nth" text already has —
+    // so the best we can do is the next upcoming occurrence of that day.
     const day = Number(s.renewalDay)||1;
     let y=today.getFullYear(), m=today.getMonth();
     let d = new Date(y,m,Math.min(day,daysInMonth(y,m)));
@@ -2395,10 +2657,14 @@ let crosshairRegistered = false;
 function getFilteredTransactions(){
   const cutoff = getRangeCutoffDate(state.ledgerRange);
   const inRange = t => !cutoff || new Date(t.date) >= cutoff;
+  const q = (state.ledgerSearch||'').trim().toLowerCase();
+  const matchesSearch = t => !q || txDescription(t).toLowerCase().includes(q) || String(t.location||'').toLowerCase().includes(q);
   return state.transactions
     .filter(inRange)
-    .filter(t => state.areaFilter[t.scope]);
+    .filter(t => state.areaFilter[t.scope])
+    .filter(matchesSearch);
 }
+function setLedgerSearch(v){ state.ledgerSearch = v; render(); }
 
 function getRangeCutoffDate(range){
   const now = new Date();
@@ -2542,7 +2808,10 @@ function renderLedger(){
       </div>
     </div>` : '';
 
-  return `${renderRootTopBar('Ledger',true)}<div class="content"><div class="chart-card"><div class="chart-scrub"><div class="chart-scrub-value" id="scrubValue">${latest?fmt(latest.total):fmt(computeNetWorth())}</div><div class="chart-scrub-delta" id="scrubDelta"></div><div class="chart-scrub-date" id="scrubDate">${latest?'Current':'No activity yet'}</div></div>${chart}</div>${renderProjectionCard()}<div class="range-tabs-row">${rangeTabs}</div><div class="area-dropdown"><button class="area-toggle${state.areaDropdownOpen?' open':''}" onclick="toggleAreaDropdown()"><span>${areaLabel}</span>${iconSvg('chevronDown')}</button>${areaMenu}</div><button class="ledger-toggle" onclick="state.ledgerCollapsed=!state.ledgerCollapsed;render()"><span>${state.ledgerCollapsed?'Show':'Hide'} ledger history</span><span class="ledger-count">${filtered.length} ${filtered.length===1?'entry':'entries'}</span></button>${selectBar}${state.ledgerCollapsed?'':`<div class="ledger-list">${rows||'<p class="empty-note">No transactions in this range.</p>'}</div>`}</div>`;
+  const searchBar = `<div class="ledger-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="ledgerSearchInput" type="text" placeholder="Search ledger..." value="${escapeHtml(state.ledgerSearch||'')}" oninput="setLedgerSearch(this.value)"></div>`;
+  const emptyNote = (state.ledgerSearch||'').trim() ? 'No transactions match your search.' : 'No transactions in this range.';
+
+  return `${renderRootTopBar('Ledger',true)}<div class="content"><div class="chart-card"><div class="chart-scrub"><div class="chart-scrub-value" id="scrubValue">${latest?fmt(latest.total):fmt(computeNetWorth())}</div><div class="chart-scrub-delta" id="scrubDelta"></div><div class="chart-scrub-date" id="scrubDate">${latest?'Current':'No activity yet'}</div></div>${chart}</div>${renderProjectionCard()}<div class="range-tabs-row">${rangeTabs}</div><div class="area-dropdown"><button class="area-toggle${state.areaDropdownOpen?' open':''}" onclick="toggleAreaDropdown()"><span>${areaLabel}</span>${iconSvg('chevronDown')}</button>${areaMenu}</div><button class="ledger-toggle" onclick="state.ledgerCollapsed=!state.ledgerCollapsed;render()"><span>${state.ledgerCollapsed?'Show':'Hide'} ledger history</span><span class="ledger-count">${filtered.length} ${filtered.length===1?'entry':'entries'}</span></button>${selectBar}${state.ledgerCollapsed?'':`${searchBar}<div class="ledger-list">${rows||`<p class="empty-note">${emptyNote}</p>`}</div>`}</div>`;
 }
 
 function startLedgerSelectMode(){
@@ -2590,19 +2859,26 @@ function confirmDeleteSelectedTx(){
   closeModal();
   save(); render();
 }
+function renderDeletedTxCard(t, checked){
+  const changeType = t.delta>=0 ? 'Money added' : 'Money removed';
+  const changeColor = t.delta>=0 ? '#43c77a' : '#ff5f57';
+  const dateStr = new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  const metaParts = [changeType, t.location, dateStr].filter(Boolean);
+  return `<div class="deleted-tx-card${checked?' selected':''}" onclick="deletedTxTap('${t.id}',event)" role="button" tabindex="0" aria-pressed="${checked}">
+    <div class="deleted-tx-check">${checked?iconSvg('check'):''}</div>
+    <div class="deleted-tx-main">
+      <div class="deleted-tx-top">
+        <div class="deleted-tx-title">${escapeHtml(txDescription(t))}</div>
+        <div class="deleted-tx-amount" style="color:${changeColor}">${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</div>
+      </div>
+      <div class="deleted-tx-meta">${escapeHtml(metaParts.join(' · '))}</div>
+    </div>
+  </div>`;
+}
 function openDeletedTxModal(){
   const items = (state.deletedTx||[]).slice().sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt));
   const selected = state.selectedDeletedTxIds || [];
-  const rows = items.map(t=>{
-    const checked=selected.includes(t.id);
-    const changeType=t.delta>=0?'Money added':'Money removed';
-    const changeColor=t.delta>=0?'#43c77a':'#ff5f57';
-    return `<div class="deleted-tx-card${checked?' selected':''}" onclick="deletedTxTap('${t.id}',event)" role="button" tabindex="0" aria-pressed="${checked}">
-      <div class="deleted-tx-check">${checked?iconSvg('check'):''}</div>
-      <div class="deleted-tx-body"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div>
-      <div class="deleted-tx-change" style="color:${changeColor}"><strong>${changeType}</strong><span>${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</span></div>
-    </div>`;
-  }).join('');
+  const rows = items.map(t => renderDeletedTxCard(t, selected.includes(t.id))).join('');
   const selectedCount=selected.length;
   const body = items.length ? `<div class="budget-form deleted-modal-form">
       <div class="deleted-hint">Tap an entry to select it for restoration.</div>
@@ -2620,16 +2896,7 @@ function refreshDeletedModal(){
   if(!body || !state.modal) return;
   const items=(state.deletedTx||[]).slice().sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt));
   const selected=state.selectedDeletedTxIds||[];
-  const rows=items.map(t=>{
-    const checked=selected.includes(t.id);
-    const changeType=t.delta>=0?'Money added':'Money removed';
-    const changeColor=t.delta>=0?'#43c77a':'#ff5f57';
-    return `<div class="deleted-tx-card${checked?' selected':''}" onclick="deletedTxTap('${t.id}',event)" role="button" tabindex="0" aria-pressed="${checked}">
-      <div class="deleted-tx-check">${checked?iconSvg('check'):''}</div>
-      <div class="deleted-tx-body"><div class="tx-description">${escapeHtml(txDescription(t))}</div><div class="tx-context">${escapeHtml(t.location||'')}</div><div class="tx-date">${new Date(t.date).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</div></div>
-      <div class="deleted-tx-change" style="color:${changeColor}"><strong>${changeType}</strong><span>${t.delta>=0?'+':'-'}${fmt(Math.abs(t.delta)).slice(1)}</span></div>
-    </div>`;
-  }).join('');
+  const rows = items.map(t => renderDeletedTxCard(t, selected.includes(t.id))).join('');
   body.innerHTML=items.length ? `<div class="budget-form deleted-modal-form"><div class="deleted-hint">Tap an entry to select it for restoration.</div><div class="deleted-list">${rows}</div><div class="deleted-actions"><button class="chip-btn" style="color:#ff5f57;border-color:rgba(255,95,87,.35);" onclick="confirmEmptyDeletedTx()">Empty trash</button><button class="chip-btn restore-selected-btn" onclick="restoreSelectedDeletedTx()" ${selected.length===0?'disabled':''}>Restore selected${selected.length?` (${selected.length})`:''}</button><button class="chip-btn restore-all-btn" onclick="restoreAllDeletedTx()">Restore all</button></div></div>` : `<p class="empty-note">No recently deleted entries.</p>`;
 }
 function deletedTxTap(id,event){
@@ -2809,16 +3076,40 @@ function showReorderDoneBtn(){
   if (btn) btn.style.display = 'block';
 }
 
+let lastAnimatedNetWorth = null;
+function animateNetWorthFigure(){
+  const el = document.getElementById('netWorthFigure');
+  if (!el) return;
+  const target = Number(el.dataset.value)||0;
+  const start = lastAnimatedNetWorth==null ? target : lastAnimatedNetWorth;
+  lastAnimatedNetWorth = target;
+  if (start === target || Math.abs(target-start) < 0.005) return;
+  const duration = 1100;
+  const t0 = performance.now();
+  function tick(now){
+    const p = Math.min(1, (now-t0)/duration);
+    const eased = 1 - Math.pow(1-p, 3);
+    const val = start + (target-start)*eased;
+    el.textContent = fmt(val);
+    if (p < 1) requestAnimationFrame(tick);
+    else el.textContent = fmt(target);
+  }
+  requestAnimationFrame(tick);
+}
+
 function render(){
   const app = document.getElementById('app');
   const tabBar = document.getElementById('tabBar');
+  const activeEl = document.activeElement;
+  const preserveFocusId = (activeEl && activeEl.id === 'ledgerSearchInput') ? activeEl.id : null;
+  const preserveSelStart = preserveFocusId ? activeEl.selectionStart : null;
   if (state.locked){
     app.classList.remove('unlocking');
     app.innerHTML = renderLockScreen();
     if (tabBar) tabBar.style.display = 'none';
     return;
   }
-  if (state.page==='home') app.innerHTML = renderHome();
+  if (state.page==='home') { app.innerHTML = renderHome(); animateNetWorthFigure(); }
   else if (state.page==='modules') app.innerHTML = renderModules();
   else if (state.page==='settings') app.innerHTML = renderSettings();
   else if (state.page==='safe') app.innerHTML = renderSafe();
@@ -2852,6 +3143,11 @@ function render(){
   budgetItemSortables = {};
   Object.values(itemSortables).forEach(s => s && s.destroy());
   itemSortables = {};
+
+  if (preserveFocusId){
+    const el = document.getElementById(preserveFocusId);
+    if (el){ el.focus(); try{ el.setSelectionRange(preserveSelStart, preserveSelStart); }catch(e){} }
+  }
 
   if (typeof Sortable !== 'undefined'){
     const opts = { animation:150, delay:150, delayOnTouchOnly:true, touchStartThreshold:6, ghostClass:'sortable-ghost', dragClass:'sortable-drag' };
