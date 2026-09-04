@@ -411,6 +411,17 @@ body{
   box-shadow:0 4px 12px rgba(242,199,92,.2);
 }
 .sub-row{border-radius:18px;padding:15px 16px;}
+.job-weeks-scroll{
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 4px 0 2px;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+.job-weeks-scroll::-webkit-scrollbar{width:5px;}
+.job-weeks-scroll::-webkit-scrollbar-thumb{background:rgba(242,199,92,.35); border-radius:999px;}
+
 .sub-chip{border-color:rgba(255,255,255,.10);background:rgba(255,255,255,.025);}
 .filter-chip,.range-tab,.chip-btn{
   border-color:rgba(255,255,255,.11);
@@ -1686,12 +1697,19 @@ function renderJobCard(job, idx){
   const totals = jobTotals(job);
   const nextPay = nextPayDateLabel(job.payDays);
 
+  const weeksList = weeks.length===0
+    ? `<p class="empty-note">No days logged yet for this job.</p>`
+    : weeks.map((w,i)=>renderWeekRow(job,w,i)).join('');
+  const weeksWrap = weeks.length > 2
+    ? `<div class="job-weeks-scroll">${weeksList}</div>`
+    : weeksList;
+
   const daysSection = !isCollapsed ? `
     <div id="addRow-day-${job.id}" style="margin-top:12px;">
       <button class="add-row" onclick="showAddWorkedDayForm('${job.id}')">${iconSvg('plus')} Log a day worked</button>
     </div>
 
-    ${weeks.length===0 ? `<p class="empty-note">No days logged yet for this job.</p>` : weeks.map((w,i)=>renderWeekRow(job,w,i)).join('')}
+    ${weeksWrap}
 
     <div class="budget-meta" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--divider);">
       <span>Should've earned: <b>${fmt(totals.earned)}</b></span>
@@ -2169,7 +2187,7 @@ function renderSafe(){
 
 function showAddBankChooser(){
   openModal('Add to My Bank', `<div class="budget-form">
-    <button class="add-row" onclick="closeModal(); showAddForm('bank')">${iconSvg('plus')} Bank Account</button>
+    <button class="add-row" onclick="closeModal(); showAddForm('bank')">${iconSvg('plus')} Account</button>
     <button class="add-row" onclick="closeModal(); showAddRecurringBudgetForm()">${iconSvg('plus')} Budget</button>
   </div>`);
 }
@@ -2418,7 +2436,7 @@ function submitGoalModal(){
   closeModal();save();
 }
 
-function showAddSpendingForm(){openModal('Add Spending Limit',`<div class="budget-form"><input class="add-input" id="bmName" placeholder="What is this for?"><input class="add-input" id="bmSpendingLimit" placeholder="Spending limit per month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmSpendingNotes" placeholder="e.g. Groceries, dining out, gas..."></textarea><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitSpendingModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
+function showAddSpendingForm(){openModal('Add Monthly Spending',`<div class="budget-form"><input class="add-input" id="bmName" placeholder="What is this for?"><input class="add-input" id="bmSpendingLimit" placeholder="Spending limit per month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmSpendingNotes" placeholder="e.g. Groceries, dining out, gas..."></textarea><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitSpendingModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
 function submitSpendingModal(){
   const name=document.getElementById('bmName').value.trim();
   if(!name)return alert('Please enter a name.');
@@ -2532,7 +2550,7 @@ function showAddExpenseChooser(){
   openModal('Add Expense', `<div class="budget-form">
     <button class="add-row" onclick="closeModal(); showAddGoalForm()">${iconSvg('plus')} Goal</button>
     <button class="add-row" onclick="closeModal(); showAddSubscriptionForm()">${iconSvg('plus')} Subscription</button>
-    <button class="add-row" onclick="closeModal(); showAddSpendingForm()">${iconSvg('plus')} Spending Limit</button>
+    <button class="add-row" onclick="closeModal(); showAddSpendingForm()">${iconSvg('plus')} Monthly Spending</button>
   </div>`);
 }
 
