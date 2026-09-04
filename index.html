@@ -734,7 +734,7 @@ const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0)
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','recurring','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false };
 
 function load(){
   try {
@@ -772,7 +772,7 @@ function load(){
     state.moneyOrder = normalizeOrder(data.moneyOrder, defaultMoneyOrder);
     const defaultBalancesOrder = ['liability','income'];
     state.balancesOrder = normalizeOrder(data.balancesOrder, defaultBalancesOrder);
-    state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
+    state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','balances']);
     state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
     state.budgetGoalOrder = normalizeItemOrder(data.budgetGoalOrder, state.budgets.filter(x=>x.type!=='recurring' && x.type!=='spending'));
     state.budgetRecurringOrder = normalizeItemOrder(data.budgetRecurringOrder, state.budgets.filter(x=>x.type==='recurring'));
@@ -1437,7 +1437,7 @@ function confirmRestore(){
   state.pin = data.pin || null;
   if (Array.isArray(data.moneyOrder)) state.moneyOrder = normalizeOrder(data.moneyOrder, ['safe','bank']);
   if (Array.isArray(data.balancesOrder)) state.balancesOrder = normalizeOrder(data.balancesOrder, ['liability','income']);
-  state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','recurring','balances']);
+  state.moduleSectionOrder = normalizeOrder(data.moduleSectionOrder, ['planning','balances']);
   state.budgetSectionOrder = normalizeOrder(data.budgetSectionOrder, ['goal','recurring','spending']);
   state.budgetGoalOrder = normalizeItemOrder(data.budgetGoalOrder, state.budgets.filter(x=>x.type!=='recurring' && x.type!=='spending'));
   state.budgetRecurringOrder = normalizeItemOrder(data.budgetRecurringOrder, state.budgets.filter(x=>x.type==='recurring'));
@@ -1979,7 +1979,7 @@ function renderHome(){
     bank: `<button class="panel-btn no-select" data-key="bank" onclick="navigate('bank')">
         <div class="panel-icon" style="background:#3b556822; color:#3b5568;">${iconSvg('bank')}</div>
         <div class="panel-body">
-          <div class="panel-title">Bank Accounts</div>
+          <div class="panel-title">My Bank</div>
           <div class="panel-sub">Checking, savings &amp; more</div>
         </div>
         <div class="panel-value">${fmt(bankTotal)}</div>
@@ -2025,9 +2025,9 @@ function renderModules(){
   };
   const balancesRows = state.balancesOrder.map(k => balancesItems[k] || '').join('');
 
+  const expenseCount = state.budgets.filter(b=>b.type!=='recurring' && b.type!=='spending').length + state.subscriptions.length;
   const sectionDefs = {
-    planning: { label: 'Planning', content: row('budget','budget','#6b4a73', iconSvg('target'), 'Budgets', 'Savings goals &amp; targets', state.budgets.length===0 ? 'None yet' : state.budgets.length+' active') },
-    recurring: { label: 'Recurring', content: row('subscription','subscription','#a3483f', iconSvg('repeat'), 'Subscriptions', 'Recurring monthly costs', state.subscriptions.length===0 ? 'None yet' : fmt(subTotal)+'/mo') },
+    planning: { label: 'Planning', content: row('expense','budget','#6b4a73', iconSvg('target'), 'Expenses', 'Goals &amp; subscriptions', expenseCount===0 ? 'None yet' : expenseCount+' active') },
     balances: { label: 'Balances', content: `<div id="balancesList">${balancesRows}</div>` }
   };
 
@@ -2167,15 +2167,45 @@ function renderSafe(){
     </div>`;
 }
 
+function showAddBankChooser(){
+  openModal('Add to My Bank', `<div class="budget-form">
+    <button class="add-row" onclick="closeModal(); showAddForm('bank')">${iconSvg('plus')} Bank Account</button>
+    <button class="add-row" onclick="closeModal(); showAddRecurringBudgetForm()">${iconSvg('plus')} Budget</button>
+  </div>`);
+}
+
+function showAddRecurringBudgetForm(){
+  openModal('Add Budget',`<div class="budget-form"><input class="add-input" id="rbName" placeholder="What is this for?"><input class="add-input" id="rbAmount" placeholder="Amount each month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="rbNotes" placeholder="What is this monthly item for/about?"></textarea><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitRecurringBudgetModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`);
+}
+function submitRecurringBudgetModal(){
+  const name=document.getElementById('rbName').value.trim();
+  const monthlyTarget=parseFloat(document.getElementById('rbAmount').value);
+  const notes=document.getElementById('rbNotes').value.trim();
+  if(!name)return alert('Please enter a name.');
+  if(!(monthlyTarget>0))return alert('Enter a monthly amount above $0.');
+  const id=genId();
+  state.budgets.push({id,name,type:'recurring',amount:0,monthlyTarget,timeframe:'monthly',createdAt:new Date().toISOString().slice(0,10),paidThrough:0,contributions:{},skippedPeriods:{},notes});
+  state.budgetRecurringOrder.push(id);
+  closeModal();save();
+}
+
 function renderBank(){
   const total = computeTotal(state.bankAccounts);
   const empty = state.bankAccounts.length===0 ? `<p class="empty-note">No accounts yet. Add one to start tracking.</p>` : '';
-  return `${renderTopBar('BANK ACCOUNTS', "showAddForm('bank')")}
+  const recurring = orderedItems(state.budgets.filter(b => b.type === 'recurring'), state.budgetRecurringOrder);
+  const recurringTotal = recurring.reduce((sum,b)=>sum+(Number(b.monthlyTarget)||0),0);
+  const budgetsSection = recurring.length ? `
+      <div class="section-label" style="margin-top:22px;">BUDGETS</div>
+      <div id="budgetItems-recurring">${recurring.map((b,i)=>renderBudgetCard(b,i)).join('')}</div>
+      <div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(recurringTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>` : '';
+  return `${renderTopBar('MY BANK', "showAddBankChooser()")}
     <div class="content">
+      <div class="section-label" style="margin-top:0;">ACCOUNTS</div>
       ${empty}
       <div id="bankItemsList">${orderedItems(state.bankAccounts,state.bankOrder).map((it,i)=>renderEditableRow('bank',it,i)).join('')}</div>
       <div id="addRow-bank"></div>
       <div class="total-bar"><span class="total-label">TOTAL IN BANK</span><span class="total-value">${fmt(total)}</span></div>
+      ${budgetsSection}
     </div>`;
 }
 
@@ -2377,25 +2407,24 @@ function renderBudgetCard(b, idx){
   </div>`;
 }
 
-function showAddBudgetForm(){openModal('Add Budget',`<div class="budget-form"><input class="add-input" id="bmName" placeholder="What is this for?"><select class="add-input" id="bmType" onchange="toggleBudgetModalFields()"><option value="goal">Savings goal</option><option value="recurring">Ongoing monthly</option><option value="spending">Monthly spending limit</option></select><div id="bmGoal"><input class="add-input" id="bmTarget" placeholder="Target amount" inputmode="decimal"><div class="goal-spacer"></div><div class="budget-form-row"><input class="add-input" id="bmDate" type="date"><select class="add-input" id="bmTime"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmGoalNotes" placeholder="Optional notes"></textarea></div><div id="bmMonthly" style="display:none"><input class="add-input" id="bmMonthlyAmount" placeholder="Amount each month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmMonthlyNotes" placeholder="What is this monthly item for/about?"></textarea></div><div id="bmSpending" style="display:none"><input class="add-input" id="bmSpendingLimit" placeholder="Spending limit per month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmSpendingNotes" placeholder="e.g. Groceries, dining out, gas..."></textarea></div><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitBudgetModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
-function toggleBudgetModalFields(){const t=document.getElementById('bmType').value;document.getElementById('bmGoal').style.display=t==='goal'?'':'none';document.getElementById('bmMonthly').style.display=t==='recurring'?'':'none';document.getElementById('bmSpending').style.display=t==='spending'?'':'none'}
-function submitBudgetModal(){
-  const name=document.getElementById('bmName').value.trim(),type=document.getElementById('bmType').value;
-  if(!name)return;
-  if(type==='recurring'){
-    const monthlyTarget=parseFloat(document.getElementById('bmMonthlyAmount').value),notes=document.getElementById('bmMonthlyNotes').value.trim();
-    if(!(monthlyTarget>0))return alert('Enter a monthly amount above $0.');
-    const id=genId(); state.budgets.push({id,name,type:'recurring',amount:0,monthlyTarget,timeframe:'monthly',createdAt:new Date().toISOString().slice(0,10),paidThrough:0,contributions:{},skippedPeriods:{},notes}); state.budgetRecurringOrder.push(id);
-  } else if (type==='spending'){
-    const monthlyLimit=parseFloat(document.getElementById('bmSpendingLimit').value),notes=document.getElementById('bmSpendingNotes').value.trim();
-    if(!(monthlyLimit>0))return alert('Enter a spending limit above $0.');
-    const id=genId(); state.budgets.push({id,name,type:'spending',monthlyLimit,expenses:[],notes,createdAt:new Date().toISOString().slice(0,10)}); state.budgetSpendingOrder.push(id);
-  } else {
-    const target=parseFloat(document.getElementById('bmTarget').value),deadline=document.getElementById('bmDate').value,timeframe=document.getElementById('bmTime').value,notes=document.getElementById('bmGoalNotes').value.trim();
-    if(!(target>0)||!deadline)return alert('Enter a target amount and date.');
-    const createdAt=new Date().toISOString().slice(0,10),totalPeriods=Math.max(1,periodsUntil(createdAt,deadline,timeframe));
-    const id=genId(); state.budgets.push({id,name,type:'goal',amount:0,target,deadline,timeframe,totalPeriods,installment:target/totalPeriods,createdAt,paidThrough:0,contributions:{},skippedPeriods:{},notes}); state.budgetGoalOrder.push(id);
-  }
+function showAddGoalForm(){openModal('Add Savings Goal',`<div class="budget-form"><input class="add-input" id="bmName" placeholder="What is this for?"><input class="add-input" id="bmTarget" placeholder="Target amount" inputmode="decimal"><div class="goal-spacer"></div><div class="budget-form-row"><input class="add-input" id="bmDate" type="date"><select class="add-input" id="bmTime"><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmGoalNotes" placeholder="Optional notes"></textarea><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitGoalModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
+function submitGoalModal(){
+  const name=document.getElementById('bmName').value.trim();
+  if(!name)return alert('Please enter a name.');
+  const target=parseFloat(document.getElementById('bmTarget').value),deadline=document.getElementById('bmDate').value,timeframe=document.getElementById('bmTime').value,notes=document.getElementById('bmGoalNotes').value.trim();
+  if(!(target>0)||!deadline)return alert('Enter a target amount and date.');
+  const createdAt=new Date().toISOString().slice(0,10),totalPeriods=Math.max(1,periodsUntil(createdAt,deadline,timeframe));
+  const id=genId(); state.budgets.push({id,name,type:'goal',amount:0,target,deadline,timeframe,totalPeriods,installment:target/totalPeriods,createdAt,paidThrough:0,contributions:{},skippedPeriods:{},notes}); state.budgetGoalOrder.push(id);
+  closeModal();save();
+}
+
+function showAddSpendingForm(){openModal('Add Spending Limit',`<div class="budget-form"><input class="add-input" id="bmName" placeholder="What is this for?"><input class="add-input" id="bmSpendingLimit" placeholder="Spending limit per month" inputmode="decimal"><div class="notes-label">NOTES</div><textarea class="add-input notes-box" id="bmSpendingNotes" placeholder="e.g. Groceries, dining out, gas..."></textarea><div class="budget-form-actions"><button class="icon-btn" style="color:#3f7a5c" onclick="submitSpendingModal()">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="closeModal()">${iconSvg('x')}</button></div></div>`)}
+function submitSpendingModal(){
+  const name=document.getElementById('bmName').value.trim();
+  if(!name)return alert('Please enter a name.');
+  const monthlyLimit=parseFloat(document.getElementById('bmSpendingLimit').value),notes=document.getElementById('bmSpendingNotes').value.trim();
+  if(!(monthlyLimit>0))return alert('Enter a spending limit above $0.');
+  const id=genId(); state.budgets.push({id,name,type:'spending',monthlyLimit,expenses:[],notes,createdAt:new Date().toISOString().slice(0,10)}); state.budgetSpendingOrder.push(id);
   closeModal();save();
 }
 
@@ -2499,42 +2528,51 @@ function renderSpendingCard(b, idx){
   </div>`;
 }
 
-function renderBudget(){
-  const empty = state.budgets.length===0 ? `<p class="empty-note">No budgets yet. Add a savings goal with a target date, an ongoing monthly amount, or a monthly spending limit.</p>` : '';
+function showAddExpenseChooser(){
+  openModal('Add Expense', `<div class="budget-form">
+    <button class="add-row" onclick="closeModal(); showAddGoalForm()">${iconSvg('plus')} Goal</button>
+    <button class="add-row" onclick="closeModal(); showAddSubscriptionForm()">${iconSvg('plus')} Subscription</button>
+    <button class="add-row" onclick="closeModal(); showAddSpendingForm()">${iconSvg('plus')} Spending Limit</button>
+  </div>`);
+}
+
+function renderExpenses(){
   const goals = orderedItems(state.budgets.filter(b => b.type !== 'recurring' && b.type !== 'spending'), state.budgetGoalOrder);
-  const recurring = orderedItems(state.budgets.filter(b => b.type === 'recurring'), state.budgetRecurringOrder);
   const spending = orderedItems(state.budgets.filter(b => b.type === 'spending'), state.budgetSpendingOrder);
+  const empty = (goals.length===0 && spending.length===0 && state.subscriptions.length===0) ? `<p class="empty-note">No expenses yet. Add a savings goal, a monthly spending limit, or a subscription.</p>` : '';
   const goalsMonthlyTotal = goals.reduce((sum,b) => sum + ((b.timeframe==='weekly') ? (Number(b.installment)||0)*52/12 : (Number(b.installment)||0)), 0);
-  const recurringTotal = recurring.reduce((sum,b)=>sum+(Number(b.monthlyTarget)||0),0);
   const spendingLimitTotal = spending.reduce((sum,b)=>sum+(Number(b.monthlyLimit)||0),0);
   const spendingSpentTotal = spending.reduce((sum,b)=>sum+spentThisMonth(b),0);
 
-  const sections = [
-    { key:'goal', label:'GOALS', items: goals, listId:'budgetItems-goal',
-      renderItem: (b,i) => renderBudgetCard(b,i),
-      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(goalsMonthlyTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>` },
-    { key:'recurring', label:'ONGOING MONTHLY', items: recurring, listId:'budgetItems-recurring',
-      renderItem: (b,i) => renderBudgetCard(b,i+goals.length),
-      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(recurringTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>` },
-    { key:'spending', label:'MONTHLY SPENDING', items: spending, listId:'budgetItems-spending',
-      renderItem: (b,i) => renderSpendingCard(b,i+goals.length+recurring.length),
-      total: `<div class="total-bar" style="margin-top:14px;"><span class="total-label">SPENT THIS MONTH</span><span class="total-value">${fmt(spendingSpentTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ ${fmt(spendingLimitTotal)}</span></span></div>` }
-  ];
-
   let firstSection = true;
-  const sectionBlocks = sections.map(def => {
-    if (!def.items.length) return '';
+
+  const goalBlock = goals.length ? (() => {
     const marginTop = firstSection ? '4px' : '20px';
     firstSection = false;
-    const itemsHTML = def.items.map((b,i) => def.renderItem(b,i)).join('');
+    const itemsHTML = goals.map((b,i) => renderBudgetCard(b,i)).join('');
     return `<div>
-      <div class="section-label" style="margin-top:${marginTop};">${def.label}</div>
-      <div id="${def.listId}">${itemsHTML}</div>
-      ${def.total}
+      <div class="section-label" style="margin-top:${marginTop};">GOALS</div>
+      <div id="budgetItems-goal">${itemsHTML}</div>
+      <div class="total-bar" style="margin-top:14px;"><span class="total-label">MONTHLY TOTAL</span><span class="total-value">${fmt(goalsMonthlyTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ mo</span></span></div>
     </div>`;
-  }).join('');
+  })() : '';
 
-  return `${renderTopBar('BUDGETS', 'showAddBudgetForm()')}<div class="content">${empty}${sectionBlocks}</div>`;
+  const subsMarginTop = firstSection ? '4px' : '20px';
+  const subsBlock = renderSubscriptionsBody(subsMarginTop);
+  firstSection = false;
+
+  const spendingBlock = spending.length ? (() => {
+    const marginTop = firstSection ? '4px' : '20px';
+    firstSection = false;
+    const itemsHTML = spending.map((b,i) => renderSpendingCard(b,i+goals.length)).join('');
+    return `<div>
+      <div class="section-label" style="margin-top:${marginTop};">MONTHLY SPENDING</div>
+      <div id="budgetItems-spending">${itemsHTML}</div>
+      <div class="total-bar" style="margin-top:14px;"><span class="total-label">SPENT THIS MONTH</span><span class="total-value">${fmt(spendingSpentTotal)} <span style="font:12px Inter;color:var(--bone-dim)">/ ${fmt(spendingLimitTotal)}</span></span></div>
+    </div>`;
+  })() : '';
+
+  return `${renderTopBar('EXPENSES', 'showAddExpenseChooser()')}<div class="content">${empty}${goalBlock}${subsBlock}${spendingBlock}</div>`;
 }
 
 function reorderBudgetType(type, newIdOrder){
@@ -2626,7 +2664,7 @@ function daysUntilLabel(date){
   return `In ${diff} days`;
 }
 
-function renderSubscriptions(){
+function renderSubscriptionsBody(marginTop){
   const monthly = state.subscriptions.reduce((sum,s)=>sum+subscriptionMonthlyCost(s),0);
   const soon = state.subscriptions
     .map(s => ({s, next: nextRenewalDate(s)}))
@@ -2635,12 +2673,15 @@ function renderSubscriptions(){
   const soonSection = soon.length ? `<div class="section-label" style="margin-top:20px;">RENEWING SOON</div><div class="budget-card" style="border-left:4px solid var(--brass); margin-bottom:16px;">
     ${soon.map(({s,next}) => `<div class="budget-meta" style="margin-top:0; padding:4px 0;"><span>${escapeHtml(s.name)}</span><span>${fmt(s.amount)} · ${daysUntilLabel(next)}</span></div>`).join('')}
   </div>` : '';
-  return `${renderTopBar('SUBSCRIPTIONS','showAddSubscriptionForm()')}<div class="content"><div id="subscriptionList">${state.subscriptions.length?orderedItems(state.subscriptions,state.subscriptionOrder).map((s,i)=>{
+  return `<div>
+    <div class="section-label" style="margin-top:${marginTop};">SUBSCRIPTIONS</div>
+    <div id="subscriptionList">${state.subscriptions.length?orderedItems(state.subscriptions,state.subscriptionOrder).map((s,i)=>{
     const open=!!state.expandedSubscriptions[s.id], has=!!String(s.notes||'').trim();
     const edit = state.editing && state.editing.scope==='subscription' && state.editing.id===s.id;
     const amountControl = edit ? `<input class="row-input" id="edit-input" inputmode="decimal" value="${s.amount}" onkeydown="if(event.key==='Enter')commitEdit('subscription','${s.id}')" oninput="state.editing.value=this.value"><button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('subscription','${s.id}')">${iconSvg('check')}</button><button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null;render()">${iconSvg('x')}</button><button class="icon-btn" style="color:#a3483f" onclick="removeItem('subscription','${s.id}')" aria-label="Delete ${escapeHtml(s.name)}">${iconSvg('trash')}</button>` : `<button class="row-amount" onclick="startEdit('subscription','${s.id}',${s.amount})">${fmt(s.amount)}</button>`;
     return `<div class="sub-row sortable-item" data-id="${s.id}" style="border-left:4px solid ${ROW_COLORS[i%ROW_COLORS.length]}"><div class="sub-row-top"><button class="sub-name" style="background:none; border:none; padding:0; text-align:left; cursor:pointer;" onclick="editSubscription('${s.id}')" title="Edit name, billing &amp; notes">${escapeHtml(s.name)}</button><div class="row-actions">${amountControl}</div></div><div class="sub-due">${escapeHtml(subscriptionRenewalText(s))}</div>${has?`<button class="sub-toggle${open?' open':''}" onclick="toggleSubscriptionExpand('${s.id}')">${iconSvg('chevronDown')} ${open?'Hide notes':'Show notes'}</button>`:''}${open&&has?`<div class="sub-details"><div class="sub-notes-label">NOTES</div><div class="sub-notes">${escapeHtml(s.notes)}</div></div>`:''}</div>`
-  }).join(''):'<p class="empty-note">No subscriptions yet. Add one to start tracking recurring costs.</p>'}</div><div class="total-bar"><span class="total-label">ESTIMATED MONTHLY COST</span><span style="text-align:right;"><span class="total-value">${fmt(monthly)}</span><div style="font-size:11px; color:var(--bone-dim); margin-top:2px;">${fmt(monthly*12)}/yr</div></span></div>${soonSection}</div>`;
+  }).join(''):'<p class="empty-note">No subscriptions yet. Add one to start tracking recurring costs.</p>'}</div><div class="total-bar"><span class="total-label">ESTIMATED MONTHLY COST</span><span style="text-align:right;"><span class="total-value">${fmt(monthly)}</span><div style="font-size:11px; color:var(--bone-dim); margin-top:2px;">${fmt(monthly*12)}/yr</div></span></div>${soonSection}
+  </div>`;
 }
 
 function subscriptionControls(prefix, s){
@@ -3290,8 +3331,8 @@ function render(){
   else if (state.page==='safe') app.innerHTML = renderSafe();
   else if (state.page==='bank') app.innerHTML = renderBank();
   else if (state.page==='liability') app.innerHTML = renderLiabilities();
-  else if (state.page==='budget') app.innerHTML = renderBudget();
-  else if (state.page==='subscription') app.innerHTML = renderSubscriptions();
+  else if (state.page==='budget') app.innerHTML = renderExpenses();
+  else if (state.page==='subscription') app.innerHTML = renderExpenses();
   else if (state.page==='income') app.innerHTML = renderIncome();
   else if (state.page==='ledger') { app.innerHTML = renderLedger(); drawChartIfNeeded(); }
   if (state.unlocking) app.classList.add('unlocking'); else app.classList.remove('unlocking');
