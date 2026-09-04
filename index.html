@@ -53,7 +53,55 @@
 
   .home-title{text-align:center; margin-top:14px; font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; letter-spacing:.08em;}
   .home-sub{text-align:center; margin:3px 0 1px; color:var(--bone-dim); font-size:11.5px;}
-  .net-worth{text-align:center; margin-bottom:16px; color:var(--brass); font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700;}
+  .net-worth-wrap{position:relative; display:block; text-align:center; margin:0 auto 16px; min-height:42px; width:max-content; max-width:100%;}
+  .net-worth{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:26px;
+    font-weight:700;
+    position:relative;
+    z-index:2;
+    /* The number itself shimmers like polished gold */
+    background:linear-gradient(
+      110deg,
+      #8a7038 0%,
+      #c9a24b 18%,
+      #fff3a8 32%,
+      #e8b94f 48%,
+      #fff8d0 58%,
+      #c9a24b 72%,
+      #8a7038 100%
+    );
+    background-size:220% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    -webkit-text-fill-color:transparent;
+    animation:goldShimmer 3.2s ease-in-out infinite;
+    filter:drop-shadow(0 0 10px rgba(232,174,47,.35));
+  }
+  @keyframes goldShimmer{
+    0%{ background-position:100% 50%; }
+    50%{ background-position:0% 50%; }
+    100%{ background-position:100% 50%; }
+  }
+  /* Randomized diamond glints spawned by JS over the digits */
+  .nw-sparkles{position:absolute; inset:0; pointer-events:none; z-index:3; overflow:visible;}
+  .nw-sparkle{
+    position:absolute;
+    width:8px; height:8px;
+    margin-left:-4px; margin-top:-4px;
+    background:linear-gradient(135deg,#ffffff 0%,#fff8d0 35%,#ffe68a 70%,#e8b94f 100%);
+    clip-path:polygon(50% 0%, 61% 35%, 100% 50%, 61% 65%, 50% 100%, 39% 65%, 0% 50%, 39% 35%);
+    box-shadow:0 0 5px rgba(255,245,180,.95), 0 0 12px rgba(232,174,47,.55);
+    opacity:0;
+    pointer-events:none;
+    will-change:transform, opacity;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .net-worth{animation:none; background:var(--brass); -webkit-text-fill-color:var(--brass); color:var(--brass); filter:none;}
+    .nw-sparkle{display:none;}
+  }
 
   .panel-btn{width:100%; display:flex; align-items:center; gap:10px; background:var(--panel);
     border:1px solid var(--panel-border); border-radius:14px; padding:11px 12px; margin-bottom:8px; text-align:left;}
@@ -245,6 +293,8 @@
   .undo-toast-msg{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 
   .reminder-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:16px;}
+  .goal-progress-card{background:var(--panel); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-bottom:14px; transition:border-color .15s ease, transform .12s ease;}
+  .goal-progress-card:active{transform:scale(.99);}
   .reminder-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0;}
   .reminder-row+.reminder-row{border-top:1px solid var(--divider);}
   .reminder-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
@@ -643,9 +693,30 @@ button,input,select,textarea{outline:none;}
 @keyframes tabRipple{to{transform:translate(-50%,-50%) scale(13);opacity:0;}}
 
 /* Gold dividers and progress tracks get a subtle metallic sheen. */
+.progress-track{
+  height:8px;
+  background:#2b2e35;
+  border-radius:999px;
+  overflow:hidden;
+  margin-bottom:6px;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.35);
+}
 .progress-fill{
-  background-image:repeating-linear-gradient(92deg,rgba(255,255,255,.08) 0 1px,transparent 1px 4px),var(--gold-metal);
-  background-blend-mode:overlay,normal;
+  height:100%;
+  border-radius:999px;
+  transition:width .45s cubic-bezier(.22,.9,.3,1);
+  background-image:
+    linear-gradient(180deg,rgba(255,255,255,.22),transparent 55%),
+    repeating-linear-gradient(92deg,rgba(255,255,255,.10) 0 1px,transparent 1px 4px),
+    var(--gold-metal);
+  background-blend-mode:overlay,overlay,normal;
+  box-shadow:0 0 12px rgba(232,174,47,.28), inset 0 1px 0 rgba(255,250,200,.35);
+}
+.progress-fill.achieved{
+  background-image:
+    linear-gradient(180deg,rgba(255,255,255,.18),transparent 55%),
+    linear-gradient(90deg,#2f6b4a,#43c77a,#2f6b4a);
+  box-shadow:0 0 12px rgba(67,199,122,.25), inset 0 1px 0 rgba(255,255,255,.2);
 }
 .bubble.next,.filter-chip.active,.range-tab.active{box-shadow:inset 0 1px 0 rgba(255,248,194,.45),0 5px 16px rgba(208,157,42,.18);}
 
@@ -740,12 +811,25 @@ const DEFAULT_SAFE = [
 ];
 
 const genId = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2));
+const SCHEMA_VERSION = 2;
+const DEFAULT_CATEGORIES = [
+  {id:'general', name:'General', color:'#c9a24b'},
+  {id:'food', name:'Food & Dining', color:'#3f7a5c'},
+  {id:'transport', name:'Transport', color:'#3b5568'},
+  {id:'housing', name:'Housing', color:'#6b4a73'},
+  {id:'entertainment', name:'Entertainment', color:'#a3483f'},
+  {id:'health', name:'Health', color:'#736e30'},
+  {id:'shopping', name:'Shopping', color:'#4a6b8a'},
+  {id:'income', name:'Income', color:'#3f7a5c'},
+  {id:'transfer', name:'Transfer', color:'#8a7038'},
+];
 const fmt = (n) => { const v = Number(n)||0; const sign = v<0?'-':''; return `${sign}$${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`; };
 const computeTotal = (list) => list.reduce((s,i)=> s + (Number(i.amount)||0), 0);
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const haptic = (ms=12) => { try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], categories: DEFAULT_CATEGORIES.slice(), editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false, onboardingDone:false };
 
 function load(){
   try {
@@ -794,6 +878,8 @@ function load(){
     state.liabilityOweOrder = normalizeItemOrder(data.liabilityOweOrder, state.liabilities.filter(x=>x.type==='owe'));
     state.liabilityOwedOrder = normalizeItemOrder(data.liabilityOwedOrder, state.liabilities.filter(x=>x.type==='owed'));
     state.jobOrder = normalizeItemOrder(data.jobOrder, state.jobs);
+    state.onboardingDone = !!data.onboardingDone;
+    state.categories = Array.isArray(data.categories) && data.categories.length ? data.categories : DEFAULT_CATEGORIES.slice();
   } catch(e){
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
@@ -802,6 +888,8 @@ function load(){
     state.liabilities = [];
     state.jobs = [];
     state.transactions = [];
+    state.categories = DEFAULT_CATEGORIES.slice();
+    state.onboardingDone = false;
     save();
   }
 }
@@ -855,11 +943,13 @@ function restoreFromSnapshot(idx){
 function save(){
   try {
     const payload = JSON.stringify({
+      version: SCHEMA_VERSION,
       safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
       subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
       transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
       moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
-      seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal
+      seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal,
+      onboardingDone: state.onboardingDone, categories: state.categories
     });
     localStorage.setItem(STORAGE_KEY, payload);
     autoSnapshot(payload);
@@ -1459,6 +1549,8 @@ function confirmRestore(){
   state.liabilityOweOrder = normalizeItemOrder(data.liabilityOweOrder, state.liabilities.filter(x=>x.type==='owe'));
   state.liabilityOwedOrder = normalizeItemOrder(data.liabilityOwedOrder, state.liabilities.filter(x=>x.type==='owed'));
   state.jobOrder = normalizeItemOrder(data.jobOrder, state.jobs);
+  state.onboardingDone = !!data.onboardingDone;
+  state.categories = Array.isArray(data.categories) && data.categories.length ? data.categories : DEFAULT_CATEGORIES.slice();
   state.pendingRestore = null;
   save(); render();
 }
@@ -1509,7 +1601,8 @@ function iconSvg(name){
     clock:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14.5"/>',
     chevronDown:'<polyline points="6 9 12 15 18 9"/>',
     chevronRight:'<polyline points="9 6 15 12 9 18"/>',
-    gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'
   };
   return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name]||''}</svg>`;
 }
@@ -2012,7 +2105,10 @@ function renderHome(){
       ${dialHTML(76)}
       <div class="home-title">THE VAULT</div>
       <div class="home-sub">Net worth tracked</div>
-      <div class="net-worth nw-figure" id="netWorthFigure" data-value="${nowNW}">${fmt(nowNW)}</div>
+      <div class="net-worth-wrap">
+        <div class="net-worth nw-figure" id="netWorthFigure" data-value="${nowNW}">${fmt(nowNW)}</div>
+        <div class="nw-sparkles" id="nwSparkles" aria-hidden="true"></div>
+      </div>
       ${changeHTML}
       ${renderUpcomingCard()}
 
@@ -2403,7 +2499,7 @@ function renderBudgetCard(b, idx){
       ${b.paidThrough > 0 ? `<div style="margin-top:8px;"><button class="backup-link" onclick="undoLastPeriod('${b.id}')">Undo last entry</button></div>` : ''}
     </div>` : '';
 
-  const progressBar = isGoal ? `<div class="progress-track"><div class="progress-fill" style="width:${pct}%; background:${achieved?'#3f7a5c':'var(--brass)'}"></div></div>` : '';
+  const progressBar = isGoal ? `<div class="progress-track"><div class="progress-fill${achieved?' achieved':''}" style="width:${pct}%"></div></div>` : '';
   const metaLine = isGoal
     ? `<div class="budget-meta"><span>${fmt(b.amount)} of ${fmt(b.target)} · ${pct}%</span><span>by ${dateLabel}</span></div>`
     : `<div class="budget-meta"><span>Total saved: ${fmt(b.amount)}</span><span>${fmt(installment)}/mo</span></div>`;
@@ -3287,9 +3383,69 @@ function showReorderDoneBtn(){
 }
 
 let lastAnimatedNetWorth = null;
+let nwSparkleTimer = null;
+function stopNetWorthSparkles(){
+  if (nwSparkleTimer){ clearTimeout(nwSparkleTimer); nwSparkleTimer = null; }
+}
+function spawnNetWorthSparkle(){
+  const layer = document.getElementById('nwSparkles');
+  const figure = document.getElementById('netWorthFigure');
+  if (!layer || !figure) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const rect = figure.getBoundingClientRect();
+  const layerRect = layer.getBoundingClientRect();
+  // Spawn only over the text bounds (slight inset so it feels on the digits)
+  const padX = Math.max(4, rect.width * 0.06);
+  const padY = Math.max(2, rect.height * 0.18);
+  const x = (rect.left - layerRect.left) + padX + Math.random() * Math.max(8, rect.width - padX * 2);
+  const y = (rect.top - layerRect.top) + padY + Math.random() * Math.max(6, rect.height - padY * 2);
+
+  const s = document.createElement('div');
+  s.className = 'nw-sparkle';
+  const size = 5 + Math.random() * 7;
+  s.style.width = size + 'px';
+  s.style.height = size + 'px';
+  s.style.left = x + 'px';
+  s.style.top = y + 'px';
+  const rot = Math.random() * 60 - 30;
+  const dur = 450 + Math.random() * 450;
+  s.style.transition = `opacity ${dur}ms ease-out, transform ${dur}ms ease-out`;
+  s.style.transform = `scale(0.2) rotate(${rot}deg)`;
+  layer.appendChild(s);
+
+  // Force reflow then animate in/out
+  requestAnimationFrame(() => {
+    s.style.opacity = '1';
+    s.style.transform = `scale(${0.9 + Math.random() * 0.5}) rotate(${rot + 20}deg)`;
+    setTimeout(() => {
+      s.style.opacity = '0';
+      s.style.transform = `scale(0.15) rotate(${rot + 40}deg)`;
+      setTimeout(() => s.remove(), dur + 40);
+    }, dur * 0.45);
+  });
+}
+function startNetWorthSparkles(){
+  stopNetWorthSparkles();
+  const layer = document.getElementById('nwSparkles');
+  if (!layer) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const tick = () => {
+    // 1–3 sparkles in a burst, then wait a random gap
+    const burst = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < burst; i++) {
+      setTimeout(spawnNetWorthSparkle, i * (40 + Math.random() * 80));
+    }
+    nwSparkleTimer = setTimeout(tick, 500 + Math.random() * 900);
+  };
+  // Small delay so layout is settled
+  nwSparkleTimer = setTimeout(tick, 200);
+}
 function animateNetWorthFigure(){
   const el = document.getElementById('netWorthFigure');
   if (!el) return;
+  startNetWorthSparkles();
   const target = Number(el.dataset.value)||0;
   const start = lastAnimatedNetWorth==null ? target : lastAnimatedNetWorth;
   lastAnimatedNetWorth = target;
@@ -3343,6 +3499,7 @@ function render(){
     if (tabBar) tabBar.style.display = 'none';
     return;
   }
+  stopNetWorthSparkles();
   if (state.page==='home') { app.innerHTML = renderHome(); animateNetWorthFigure(); }
   else if (state.page==='modules') app.innerHTML = renderModules();
   else if (state.page==='settings') app.innerHTML = renderSettings();
@@ -3452,7 +3609,23 @@ render();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version available — soft prompt via toast if possible
+            const t = document.getElementById('saveToast');
+            if (t) {
+              t.textContent = 'Update available — refresh to get it';
+              t.classList.add('show');
+              setTimeout(() => t.classList.remove('show'), 5000);
+            }
+          }
+        });
+      });
+    }).catch(()=>{});
   });
 }
 </script>

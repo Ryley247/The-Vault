@@ -1,7 +1,7 @@
 {
   "name": "The Vault - Money Tracker",
   "short_name": "The Vault",
-  "description": "Track your safe cash, bank accounts, and net worth over time.",
+  "description": "Track your safe cash, bank accounts, net worth, goals, and more — offline-first.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
