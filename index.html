@@ -483,7 +483,29 @@ body{
 .area-toggle{border-radius:14px;}
 .area-menu{border-radius:14px;}
 .tx-item{border-bottom-color:rgba(255,255,255,.075);}
-.tx-checkbox input,.area-option input{accent-color:#f2c75c;}
+.tx-checkbox input,.area-option input{
+  appearance:none; -webkit-appearance:none;
+  width:19px; height:19px; margin:0; flex:0 0 19px;
+  border:1.5px solid rgba(255,255,255,.22); border-radius:6px;
+  background:rgba(255,255,255,.035); position:relative; cursor:pointer;
+  vertical-align:middle;
+}
+.tx-checkbox input:checked,.area-option input:checked{
+  background-image:var(--gold-metal-bright);
+  border-color:#ffe891;
+  box-shadow:0 1px 3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,250,198,.35);
+}
+.tx-checkbox input:checked::after,.area-option input:checked::after{
+  content:'✓'; position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-53%); color:#15100a;
+  font-size:14px; line-height:1; font-weight:800;
+}
+.chart-scrub-value{
+  background-image:var(--gold-metal-bright);
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+  text-shadow:none;
+}
 .save-toast{
   background:#f2c75c;color:#090a0b;
   box-shadow:0 8px 24px rgba(0,0,0,.3);
@@ -829,7 +851,7 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'
 const haptic = (ms=12) => { try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} };
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], categories: DEFAULT_CATEGORIES.slice(), editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, budget:true, subscription:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false, onboardingDone:false };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], categories: DEFAULT_CATEGORIES.slice(), editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, goal:true, budget:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','recurring','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false, onboardingDone:false };
 
 function load(){
   try {
@@ -880,6 +902,9 @@ function load(){
     state.jobOrder = normalizeItemOrder(data.jobOrder, state.jobs);
     state.onboardingDone = !!data.onboardingDone;
     state.categories = Array.isArray(data.categories) && data.categories.length ? data.categories : DEFAULT_CATEGORIES.slice();
+    state.areaFilter = {safe:true, bank:true, liability:true, goal:true, budget:true};
+    const changedLedgerScopes = normalizeLedgerScopes();
+    if (changedLedgerScopes) save();
   } catch(e){
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
@@ -892,6 +917,36 @@ function load(){
     state.onboardingDone = false;
     save();
   }
+}
+
+function normalizeLedgerScopes(){
+  // Older versions logged savings goals as "Budget". Reclassify those entries
+  // when the current budget record confirms that the item is a goal.
+  const goalsByName = new Map(
+    state.budgets
+      .filter(b => b.type !== 'recurring' && b.type !== 'spending')
+      .map(b => [String(b.name), b])
+  );
+  let changed = false;
+  const beforeCount = (state.transactions || []).length;
+  state.transactions = (state.transactions || []).filter(t => t.scope !== 'subscription');
+  if (state.transactions.length !== beforeCount) changed = true;
+  (state.transactions || []).forEach(t => {
+    if (t.scope !== 'budget') return;
+    const loc = String(t.location || '');
+    let name = '';
+    if (loc.startsWith('Budget: Removed ')) name = loc.slice('Budget: Removed '.length);
+    else if (loc.startsWith('Budget: ')) name = loc.slice('Budget: '.length);
+    if (name && goalsByName.has(name)){
+      t.scope = 'goal';
+      t.location = loc.replace(/^Budget:/, 'Goals:');
+      changed = true;
+    }
+  });
+  const beforeDeleted = (state.deletedTx || []).length;
+  state.deletedTx = (state.deletedTx || []).filter(t => t.scope !== 'subscription');
+  if (state.deletedTx.length !== beforeDeleted) changed = true;
+  return changed;
 }
 
 /* ---------- auto-backup snapshots ----------
@@ -995,13 +1050,14 @@ function showSaved(){
 function getList(scope){
   if (scope==='safe') return state.safeItems;
   if (scope==='bank') return state.bankAccounts;
-  if (scope==='budget') return state.budgets;
+  if (scope==='budget' || scope==='goal') return state.budgets;
   if (scope==='subscription') return state.subscriptions;
   if (scope==='liability') return state.liabilities;
 }
 function scopeLabel(scope){
   if (scope==='safe') return 'Safe';
-  if (scope==='bank') return 'Bank';
+  if (scope==='bank') return 'Accounts';
+  if (scope==='goal') return 'Goals';
   if (scope==='budget') return 'Budget';
   if (scope==='liability') return 'Liability';
   return 'Subscription';
@@ -1021,7 +1077,7 @@ function updateAmount(scope, id, newAmount){
   if (!item) return;
   const delta = newAmount - item.amount;
   item.amount = newAmount;
-  if (delta !== 0){
+  if (delta !== 0 && scope !== 'subscription'){
     if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() - (affectsNetWorth(scope) ? delta : 0);
     state.transactions.push({
       id: genId(), date: new Date().toISOString(),
@@ -1052,7 +1108,7 @@ function removeItem(scope, id){
   const item = list[idx];
   list.splice(idx,1);
   let createdTxId = null;
-  if (item.amount !== 0){
+  if (item.amount !== 0 && scope !== 'subscription'){
     if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + (affectsNetWorth(scope) ? item.amount : 0);
     createdTxId = genId();
     state.transactions.push({
@@ -2432,7 +2488,8 @@ function renderBudgetCard(b, idx){
   const isGoal = b.type !== 'recurring';
   const pct = isGoal && b.target>0 ? Math.min(100, Math.round((b.amount/b.target)*100)) : 0;
   const achieved = isGoal && b.target>0 && b.amount >= b.target;
-  const isEditing = state.editing && state.editing.scope==='budget' && state.editing.id===b.id;
+  const editScope = isGoal ? 'goal' : 'budget';
+  const isEditing = state.editing && state.editing.scope===editScope && state.editing.id===b.id;
   const isOpen = !!state.expandedBudgets[b.id];
   const logsOpen = !!state.expandedLogs[b.id];
   const dateLabel = isGoal ? new Date(b.deadline+'T00:00:00').toLocaleDateString(undefined,{month:'short', day:'numeric'}) : '';
@@ -2441,10 +2498,10 @@ function renderBudgetCard(b, idx){
 
   const savedControl = isEditing ? `
       <input class="row-input" id="edit-input" inputmode="decimal" value="${state.editing.value}" onkeydown="if(event.key==='Enter'){commitEdit('budget','${b.id}')}" oninput="state.editing.value=this.value" />
-      <button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('budget','${b.id}')">${iconSvg('check')}</button>
+      <button class="icon-btn" style="color:#3f7a5c" onclick="commitEdit('${editScope}','${b.id}')">${iconSvg('check')}</button>
       <button class="icon-btn" style="color:#a8a49a" onclick="state.editing=null; render();">${iconSvg('x')}</button>
-      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('budget','${b.id}')">${iconSvg('trash')}</button>
-    ` : `<button class="row-amount" onclick="startEdit('budget','${b.id}', ${b.amount})">${fmt(b.amount)}</button>`;
+      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('${editScope}','${b.id}')">${iconSvg('trash')}</button>
+    ` : `<button class="row-amount" onclick="startEdit('${editScope}','${b.id}', ${b.amount})">${fmt(b.amount)}</button>`;
 
   const suggestLine = isGoal
     ? (achieved
@@ -2603,7 +2660,7 @@ function renderSpendingCard(b, idx){
   const limitControl = isEditingLimit ? `
       <input class="row-input" id="limit-input" inputmode="decimal" value="${state.editingLimit.value}" onkeydown="if(event.key==='Enter'){commitSpendingLimit('${b.id}')}" oninput="state.editingLimit.value=this.value" />
       <button class="icon-btn" style="color:#3f7a5c" onclick="commitSpendingLimit('${b.id}')">${iconSvg('check')}</button>
-      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('budget','${b.id}')">${iconSvg('trash')}</button>
+      <button class="icon-btn" style="color:#a3483f" onclick="removeItem('${editScope}','${b.id}')">${iconSvg('trash')}</button>
       <button class="icon-btn" style="color:#a8a49a" onclick="state.editingLimit=null; render();">${iconSvg('x')}</button>
     ` : `<button class="row-amount" onclick="startEditSpendingLimit('${b.id}', ${limit})">${fmt(limit)}/mo</button>`;
 
@@ -2928,7 +2985,7 @@ function toggleAllAreas(){
 }
 
 function areaFullLabel(a){
-  return a==='safe'?'Safe':a==='bank'?'Bank':a==='liability'?'Liability':a==='budget'?'Budget':'Subscriptions';
+  return a==='safe'?'Safe':a==='bank'?'Accounts':a==='liability'?'Liability':a==='goal'?'Goals':'Budget';
 }
 
 function projectionRatePerDay(){
@@ -3047,7 +3104,7 @@ function renderLedger(){
   const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date));
   const filtered=[...filteredAsc].reverse();
   const latest=filteredAsc.length?filteredAsc[filteredAsc.length-1]:null;
-  const areas=['safe','bank','liability','budget','subscription'];
+  const areas=['safe','bank','liability','goal','budget'];
   const activeAreas=areas.filter(a=>state.areaFilter[a]);
   const allAreasSelected=activeAreas.length===areas.length;
   const rangeTabs=[['1D','1D'],['1W','1W'],['1M','1M'],['1Y','1Y'],['All','all']].map(([label,key])=>`<button class="range-tab${state.ledgerRange===key?' active':''}" onclick="setLedgerRange('${key}')">${label}</button>`).join('');
