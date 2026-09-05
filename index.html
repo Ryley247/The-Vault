@@ -42,14 +42,18 @@
   .dial{width:100%; height:100%; border-radius:50%; border:3px solid var(--brass-dim);
     background:radial-gradient(circle at 35% 30%, #2a2d33, var(--bg) 70%);
     box-shadow:inset 0 0 20px rgba(0,0,0,.6), 0 0 0 6px var(--bg);
-    position:relative; animation:spin 60s linear infinite;}
-  @media (prefers-reduced-motion: reduce){ .dial{animation:none;} }
+    position:relative;}
+  /* only the tick ring spins — center stays fixed */
+  .dial-ticks{position:absolute; inset:0; border-radius:50%;
+    animation:spin 60s linear infinite;}
+  @media (prefers-reduced-motion: reduce){ .dial-ticks{animation:none;} }
   @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
   .tick{position:absolute; left:50%; top:50%; width:2px; height:42%; transform-origin:bottom; background:var(--panel-border);}
   .tick.major{background:var(--brass);}
   .dial-center{position:absolute; width:40%; height:40%; top:30%; left:30%; border-radius:50%;
     background:linear-gradient(145deg, var(--brass), var(--brass-dim));
-    box-shadow:0 2px 6px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;}
+    box-shadow:0 2px 6px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;
+    z-index:2;}
 
   .home-title{text-align:center; margin-top:14px; font-family:'Oswald',sans-serif; font-size:22px; font-weight:600; letter-spacing:.08em;}
   .home-sub{text-align:center; margin:3px 0 1px; color:var(--bone-dim); font-size:11.5px;}
@@ -1628,7 +1632,8 @@ function dialHTML(size){
     ticks += `<div class="tick${i%6===0?' major':''}" style="transform:rotate(${360/24*i}deg) translateX(-50%)"></div>`;
   }
   return `<div class="dial-wrap" style="width:${size}px;height:${size}px;">
-    <div class="dial">${ticks}
+    <div class="dial">
+      <div class="dial-ticks">${ticks}</div>
       <div class="dial-center">
         <svg width="${size*0.16}" height="${size*0.16}" viewBox="0 0 24 24" fill="none" stroke="#121316" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
       </div>
