@@ -304,6 +304,10 @@
   .reminder-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
   .reminder-label{font-size:13.5px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .reminder-when{font-size:12px; color:var(--bone-dim); font-family:'JetBrains Mono',monospace; flex-shrink:0;}
+  .cashflow-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; font-size:13px;}
+  .cashflow-row+.cashflow-row{border-top:1px solid var(--divider);}
+  .cashflow-label{color:var(--bone-dim);}
+  .cashflow-amt{font-family:'JetBrains Mono',monospace; font-weight:600;}
 
   .ledger-search{position:relative; margin-bottom:10px;}
   .ledger-search input{width:100%; padding:10px 14px 10px 38px; border-radius:12px; border:1px solid var(--panel-border); background:var(--panel); color:var(--bone); font-size:13.5px;}
@@ -2178,6 +2182,32 @@ function renderHome(){
     </div>`;
 }
 
+function renderCashflowSnapshot(){
+  // Monthly subscriptions only — do not prorate annual/quarterly/etc.
+  const subMo = (state.subscriptions||[])
+    .filter(s => (s.billing || 'Monthly') === 'Monthly')
+    .reduce((s,sub)=> s + (Number(sub.amount)||0), 0);
+  // Goal installments on a monthly basis (weekly goals × 4 weeks)
+  const goalMo = (state.budgets||[])
+    .filter(b => b.type === 'goal' || (!b.type && b.target))
+    .reduce((s,b) => {
+      const inst = Number(b.installment)||budgetInstallment(b)||0;
+      return s + (b.timeframe === 'weekly' ? inst * 4 : inst);
+    }, 0);
+  // Monthly income from weekly rate (e.g. $300/wk → $1,200/mo)
+  const expected = (state.jobs||[]).reduce((s,job)=> s + (Number(job.weeklyRate)||0) * 4, 0);
+  const pending = overallIncomeTotals().pending;
+  const net = expected - subMo - goalMo;
+  return `<div class="reminder-card">
+    <div class="section-label" style="margin-bottom:4px;">Monthly cash flow</div>
+    <div class="cashflow-row"><span class="cashflow-label">Expected income</span><span class="cashflow-amt" style="color:#3f7a5c">+${fmt(expected)}</span></div>
+    <div class="cashflow-row"><span class="cashflow-label">Monthly subscriptions</span><span class="cashflow-amt" style="color:#a3483f">−${fmt(subMo)}</span></div>
+    <div class="cashflow-row"><span class="cashflow-label">Goal installments</span><span class="cashflow-amt" style="color:#a3483f">−${fmt(goalMo)}</span></div>
+    <div class="cashflow-row"><span class="cashflow-label" style="font-weight:600;color:var(--bone)">Projected net</span><span class="cashflow-amt" style="color:${net>=0?'#3f7a5c':'#a3483f'}">${net>=0?'+':''}${fmt(net)}</span></div>
+    ${pending>0 ? `<div class="cashflow-row"><span class="cashflow-label">Unpaid work</span><span class="cashflow-amt" style="color:var(--brass)">${fmt(pending)} pending</span></div>` : ''}
+  </div>`;
+}
+
 function renderModules(){
   const liabNet = liabilitiesNet();
   const subTotal = computeTotal(state.subscriptions);
@@ -2221,6 +2251,7 @@ function renderModules(){
   return `
     ${renderRootTopBar('Modules', true)}
     <div class="content" style="padding-top:6px;">
+      ${renderCashflowSnapshot()}
       <div id="moduleSectionList">${sectionBlocks}</div>
     </div>`;
 }
