@@ -323,7 +323,21 @@
   .diff-list li::before{content:'•'; position:absolute; left:0; color:var(--brass-dim);}
   .diff-list-empty{font-size:12.5px; color:var(--bone-dim); margin:2px 0 0; font-style:italic;}
 
-.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.64);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));animation:fadeIn .16s ease}.modal{width:min(520px,100%);max-height:calc((var(--vh, 1vh) * 100) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);overflow:auto;background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:slideDown .2s ease}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.modal-title{font-family:'Oswald',sans-serif;font-size:21px;letter-spacing:.04em}.modal-close{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--bone-dim);display:grid;place-items:center}.modal .budget-form{margin:0}.modal .budget-form-actions{margin-top:16px;padding-top:14px;border-top:1px solid var(--divider)}.notes-label{font-size:10.5px;color:var(--brass);font-weight:700;letter-spacing:.07em;margin:4px 0}.notes-box{min-height:88px;resize:vertical;line-height:1.45}.sub-notes{margin-top:9px;padding:10px 12px;background:var(--bg);border:1px solid var(--divider);border-radius:11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}.goal-spacer{height:9px}.ledger-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;margin:12px 0 2px;border:1px solid var(--panel-border);border-radius:13px;background:var(--panel);font-size:13px;font-weight:700}.ledger-count{font-size:11px;color:var(--brass)}.tx-description{font-size:13.5px;font-weight:700}.tx-context{font-size:11.5px;color:var(--bone-dim);margin-top:3px}.tx-date{font-size:11.5px;color:var(--bone-dim);margin-top:3px}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideDown{from{transform:translateY(-20px);opacity:.6}to{transform:translateY(0);opacity:1}}@media(min-width:521px){.modal-backdrop{align-items:center}.modal{max-height:calc((var(--vh, 1vh) * 100) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 76px);}}
+.modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.64);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));animation:fadeIn .16s ease}.modal{width:min(520px,100%);max-height:calc((var(--vh, 1vh) * 100) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 40px);overflow:auto;background:var(--panel);border:1px solid var(--panel-border);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.5);animation:slideDown .2s ease}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.modal-title{font-family:'Oswald',sans-serif;font-size:21px;letter-spacing:.04em}.modal-close{width:34px;height:34px;border-radius:50%;background:var(--bg);color:var(--bone-dim);display:grid;place-items:center}.modal .budget-form{margin:0}.modal .budget-form-actions{margin-top:16px;padding-top:14px;border-top:1px solid var(--divider)}.notes-label{font-size:10.5px;color:var(--brass);font-weight:700;letter-spacing:.07em;margin:4px 0}
+.account-picker{margin-top:6px;padding:8px 9px;background:var(--bg);border:1px solid var(--divider);border-radius:12px}
+.account-group-label{font-size:9px;color:var(--bone-dim);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:7px 0 5px}
+.account-group-label:first-child{margin-top:0}
+.account-chip-row{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:3px;scrollbar-width:thin}
+.account-chip-row::-webkit-scrollbar{height:4px}
+.account-chip-row::-webkit-scrollbar-thumb{background:var(--panel-border);border-radius:2px}
+.account-chip{display:flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 10px;border-radius:10px;border:1.5px solid var(--panel-border);background:var(--panel);color:var(--bone-dim);cursor:pointer;white-space:nowrap;font-size:12px;transition:border-color .15s ease,background .15s ease,color .15s ease}
+.account-chip:active{transform:scale(.97)}
+.account-chip .chip-name{font-size:12px;font-weight:700;color:var(--bone)}
+.account-chip .chip-amt{font-size:11px;color:var(--bone-dim)}
+.account-chip.selected{border-color:var(--brass);background:rgba(201,162,75,.14)}
+.account-chip.selected .chip-name,.account-chip.selected .chip-amt{color:var(--brass)}
+.account-chip.external{border-style:dashed}
+.account-picker-empty{font-size:12px;color:var(--bone-dim);padding:2px 0}.notes-box{min-height:88px;resize:vertical;line-height:1.45}.sub-notes{margin-top:9px;padding:10px 12px;background:var(--bg);border:1px solid var(--divider);border-radius:11px;font-size:12.5px;line-height:1.45;white-space:pre-wrap}.goal-spacer{height:9px}.ledger-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 14px;margin:12px 0 2px;border:1px solid var(--panel-border);border-radius:13px;background:var(--panel);font-size:13px;font-weight:700}.ledger-count{font-size:11px;color:var(--brass)}.tx-description{font-size:13.5px;font-weight:700}.tx-context{font-size:11.5px;color:var(--bone-dim);margin-top:3px}.tx-date{font-size:11.5px;color:var(--bone-dim);margin-top:3px}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideDown{from{transform:translateY(-20px);opacity:.6}to{transform:translateY(0);opacity:1}}@media(min-width:521px){.modal-backdrop{align-items:center}.modal{max-height:calc((var(--vh, 1vh) * 100) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 76px);}}
 
 /* ---------- Modern Apple-inspired visual refresh ---------- */
 :root{
@@ -1249,12 +1263,7 @@ function startMarkPeriod(budgetId, n){
   const periodsToCover = n - b.paidThrough;
   const rate = budgetInstallment(b) || 0;
   const suggested = +(rate * periodsToCover).toFixed(2);
-  const firstAccount = fundingAccounts()[0] || null;
-  state.editingPeriod = {
-    budgetId, n, value: String(suggested),
-    accScope: firstAccount ? firstAccount.accScope : '',
-    accId: firstAccount ? firstAccount.id : ''
-  };
+  state.editingPeriod = {budgetId, n, value: String(suggested), accScope: '', accId: ''};
   render();
 }
 
@@ -1263,11 +1272,13 @@ function cancelMarkPeriod(){
   render();
 }
 
-function setMarkPeriodAccount(combined){
+function setMarkPeriodAccount(accScope, accId){
   if (!state.editingPeriod) return;
-  const [accScope, accId] = combined.split('|');
   state.editingPeriod.accScope = accScope || '';
   state.editingPeriod.accId = accId || '';
+  render();
+  const el = document.getElementById('periodAmount');
+  if (el) el.focus();
 }
 
 function commitMarkPeriod(){
@@ -1280,19 +1291,24 @@ function commitMarkPeriod(){
     alert('Please enter a valid amount.');
     return;
   }
-  // If accounts exist, an account must be chosen so the money actually moves.
-  if (amt > 0 && fundingAccounts().length > 0){
-    if (!ep.accScope || !ep.accId){
-      alert('Please choose an account to pull this from.');
-      return;
-    }
+  // If accounts exist, something must be chosen — either a real account or
+  // "New money" — so it's always clear where the funds came from.
+  if (amt > 0 && fundingAccounts().length > 0 && !ep.accScope){
+    alert('Please choose where this money is coming from.');
+    return;
+  }
+  if (!b.contributionAccounts) b.contributionAccounts = {};
+  if (amt > 0 && ep.accScope === 'external'){
+    b.contributionAccounts[ep.n] = {scope: 'external'};
+  } else if (amt > 0 && ep.accScope && ep.accId){
     const ok = deductFromAccount(ep.accScope, ep.accId, amt, b.name);
     if (!ok){
       alert('That account could not be found.');
       return;
     }
-    if (!b.contributionAccounts) b.contributionAccounts = {};
     b.contributionAccounts[ep.n] = {scope: ep.accScope, id: ep.accId};
+  } else {
+    delete b.contributionAccounts[ep.n];
   }
   if (!b.contributions) b.contributions = {};
   b.contributions[ep.n] = amt;
@@ -1324,7 +1340,7 @@ function undoLastPeriod(budgetId){
   const amt = (b.contributions && b.contributions[n]) || 0;
   b.amount = Math.max(0, b.amount - amt);
   const acc = b.contributionAccounts && b.contributionAccounts[n];
-  if (acc && amt > 0) refundToAccount(acc.scope, acc.id, amt, b.name);
+  if (acc && acc.scope !== 'external' && amt > 0) refundToAccount(acc.scope, acc.id, amt, b.name);
   if (b.contributions) delete b.contributions[n];
   if (b.contributionAccounts) delete b.contributionAccounts[n];
   if (b.skippedPeriods) delete b.skippedPeriods[n];
@@ -2633,12 +2649,24 @@ function renderBudgetCard(b, idx){
     ? `<div class="bubble-done-note">${isGoal ? `All ${periodWord}s checked off` : `You're all set for this ${periodWord}`}</div>`
     : `<div class="bubble-row">${visibleBubbles.map(n => `<button class="bubble${n===b.paidThrough+1?' next':''}" onclick="startMarkPeriod('${b.id}',${n})" title="Log what you put in for ${periodLabel(b,n)}">${periodLabel(b,n)}</button>`).join('')}</div>`;
 
-  const fundingAccts = isEditingThisBudget ? fundingAccounts() : [];
-  const accountPicker = isEditingThisBudget && fundingAccts.length > 0 ? `
-      <div class="notes-label" style="margin-top:9px;">TAKE FROM</div>
-      <select class="add-input" id="periodAccount" onchange="setMarkPeriodAccount(this.value)">
-        ${fundingAccts.map(a => `<option value="${a.accScope}|${a.id}" ${state.editingPeriod.accScope===a.accScope && state.editingPeriod.accId===a.id ? 'selected' : ''}>${escapeHtml(a.name)} (${fmt(a.amount)})</option>`).join('')}
-      </select>` : (isEditingThisBudget ? `<p class="empty-note" style="padding:6px 0;">No accounts yet — this will just add to the goal without pulling from anywhere.</p>` : '');
+  const safeAccts = isEditingThisBudget ? orderedItems(state.safeItems, state.safeOrder) : [];
+  const bankAccts = isEditingThisBudget ? orderedItems(state.bankAccounts, state.bankOrder) : [];
+  const hasAnyAccounts = safeAccts.length > 0 || bankAccts.length > 0;
+  const accountChip = (accScope, item) => {
+    const selected = state.editingPeriod.accScope===accScope && state.editingPeriod.accId===item.id;
+    return `<button type="button" class="account-chip${selected?' selected':''}" onclick="setMarkPeriodAccount('${accScope}','${item.id}')"><span class="chip-name">${escapeHtml(item.name)}</span><span class="chip-amt">${fmt(item.amount)}</span></button>`;
+  };
+  const externalSelected = isEditingThisBudget && state.editingPeriod.accScope === 'external';
+  const accountPicker = isEditingThisBudget ? `
+      <div class="notes-label" style="margin-top:8px;">TAKE FROM</div>
+      <div class="account-picker">
+        <div class="account-chip-row">
+          <button type="button" class="account-chip external${externalSelected?' selected':''}" onclick="setMarkPeriodAccount('external','')"><span class="chip-name">+ New money</span></button>
+        </div>
+        ${safeAccts.length ? `<div class="account-group-label">Safe</div><div class="account-chip-row">${safeAccts.map(a=>accountChip('safe',a)).join('')}</div>` : ''}
+        ${bankAccts.length ? `<div class="account-group-label">Bank</div><div class="account-chip-row">${bankAccts.map(a=>accountChip('bank',a)).join('')}</div>` : ''}
+        ${!hasAnyAccounts ? `<div class="account-picker-empty">No accounts yet — new money is your only option for now.</div>` : ''}
+      </div>` : '';
 
   const periodEntryForm = isEditingThisBudget ? `
     <div class="budget-form" style="padding:0; border:none; margin-top:6px;">
@@ -2664,8 +2692,12 @@ function renderBudgetCard(b, idx){
   for (let n = 1; n <= b.paidThrough; n++){
     if (contributionsObj[n] !== undefined){
       const acc = contributionAccountsObj[n];
-      const accItem = acc ? findAccount(acc.scope, acc.id) : null;
-      const fromText = accItem ? ` · from ${escapeHtml(accItem.name)}` : '';
+      let fromText = '';
+      if (acc && acc.scope === 'external') fromText = ' · new money';
+      else if (acc){
+        const accItem = findAccount(acc.scope, acc.id);
+        fromText = accItem ? ` · from ${escapeHtml(accItem.name)}` : ' · from a removed account';
+      }
       logEntries.push({n, text: fmt(contributionsObj[n]) + fromText, skipped:false});
     }
     else if (skippedObj[n]) logEntries.push({n, text: 'Skipped', skipped:true});
