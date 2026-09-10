@@ -868,7 +868,7 @@ function load(){
     const data = JSON.parse(raw);
     state.safeItems = data.safeItems || [];
     state.bankAccounts = data.bankAccounts || [];
-    state.budgets = (data.budgets || []).map(b => ({...b, type: b.type || 'goal', contributions: b.contributions || {}, skippedPeriods: b.skippedPeriods || {}, expenses: b.expenses || []}));
+    state.budgets = (data.budgets || []).map(b => ({...b, type: b.type || 'goal', contributions: b.contributions || {}, contributionAccounts: b.contributionAccounts || {}, skippedPeriods: b.skippedPeriods || {}, expenses: b.expenses || []}));
     state.subscriptions = (data.subscriptions || []).map(s => {
       const due = s.dueDate ? new Date(s.dueDate + 'T00:00:00') : null;
       const billing = s.billing || s.renewalType || 'Monthly';
@@ -1200,19 +1200,74 @@ function periodLabel(b, n){
   return d.toLocaleDateString(undefined,{month:'short'});
 }
 
+// Combined list of every fundable account (Safe items + Bank accounts), in their
+// normal display order, tagged with which list ("safe"/"bank") each came from so
+// a goal contribution can be pulled from the right place.
+function fundingAccounts(){
+  return [
+    ...orderedItems(state.safeItems, state.safeOrder).map(i => ({...i, accScope:'safe'})),
+    ...orderedItems(state.bankAccounts, state.bankOrder).map(i => ({...i, accScope:'bank'}))
+  ];
+}
+function findAccount(accScope, accId){
+  const list = accScope==='safe' ? state.safeItems : accScope==='bank' ? state.bankAccounts : null;
+  return list ? list.find(i=>i.id===accId) : null;
+}
+// Move money out of an account into a goal contribution, logging it to the ledger
+// exactly like a manual balance edit would.
+function deductFromAccount(accScope, accId, amt, goalName){
+  const item = findAccount(accScope, accId);
+  if (!item) return false;
+  item.amount -= amt;
+  if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() + (affectsNetWorth(accScope) ? amt : 0);
+  state.transactions.push({
+    id: genId(), date: new Date().toISOString(),
+    location: `${scopeLabel(accScope)}: ${item.name}`,
+    description: `Moved to goal: ${goalName}`,
+    scope: accScope, delta: -amt, total: computeNetWorth()
+  });
+  return true;
+}
+// Reverse of deductFromAccount, used when undoing a logged contribution.
+function refundToAccount(accScope, accId, amt, goalName){
+  const item = findAccount(accScope, accId);
+  if (!item) return false;
+  item.amount += amt;
+  if (state.ledgerBaseTotal == null) state.ledgerBaseTotal = computeNetWorth() - (affectsNetWorth(accScope) ? amt : 0);
+  state.transactions.push({
+    id: genId(), date: new Date().toISOString(),
+    location: `${scopeLabel(accScope)}: ${item.name}`,
+    description: `Returned from goal: ${goalName}`,
+    scope: accScope, delta: amt, total: computeNetWorth()
+  });
+  return true;
+}
+
 function startMarkPeriod(budgetId, n){
   const b = state.budgets.find(x=>x.id===budgetId);
   if (!b) return;
   const periodsToCover = n - b.paidThrough;
   const rate = budgetInstallment(b) || 0;
   const suggested = +(rate * periodsToCover).toFixed(2);
-  state.editingPeriod = {budgetId, n, value: String(suggested)};
+  const firstAccount = fundingAccounts()[0] || null;
+  state.editingPeriod = {
+    budgetId, n, value: String(suggested),
+    accScope: firstAccount ? firstAccount.accScope : '',
+    accId: firstAccount ? firstAccount.id : ''
+  };
   render();
 }
 
 function cancelMarkPeriod(){
   state.editingPeriod = null;
   render();
+}
+
+function setMarkPeriodAccount(combined){
+  if (!state.editingPeriod) return;
+  const [accScope, accId] = combined.split('|');
+  state.editingPeriod.accScope = accScope || '';
+  state.editingPeriod.accId = accId || '';
 }
 
 function commitMarkPeriod(){
@@ -1224,6 +1279,20 @@ function commitMarkPeriod(){
   if (isNaN(amt) || amt < 0){
     alert('Please enter a valid amount.');
     return;
+  }
+  // If accounts exist, an account must be chosen so the money actually moves.
+  if (amt > 0 && fundingAccounts().length > 0){
+    if (!ep.accScope || !ep.accId){
+      alert('Please choose an account to pull this from.');
+      return;
+    }
+    const ok = deductFromAccount(ep.accScope, ep.accId, amt, b.name);
+    if (!ok){
+      alert('That account could not be found.');
+      return;
+    }
+    if (!b.contributionAccounts) b.contributionAccounts = {};
+    b.contributionAccounts[ep.n] = {scope: ep.accScope, id: ep.accId};
   }
   if (!b.contributions) b.contributions = {};
   b.contributions[ep.n] = amt;
@@ -1242,6 +1311,7 @@ function skipMarkedPeriod(){
   if (!b.skippedPeriods) b.skippedPeriods = {};
   b.skippedPeriods[ep.n] = true;
   if (b.contributions) delete b.contributions[ep.n];
+  if (b.contributionAccounts) delete b.contributionAccounts[ep.n];
   b.paidThrough = Math.max(b.paidThrough || 0, ep.n);
   state.editingPeriod = null;
   save(); render();
@@ -1253,7 +1323,10 @@ function undoLastPeriod(budgetId){
   const n = b.paidThrough;
   const amt = (b.contributions && b.contributions[n]) || 0;
   b.amount = Math.max(0, b.amount - amt);
+  const acc = b.contributionAccounts && b.contributionAccounts[n];
+  if (acc && amt > 0) refundToAccount(acc.scope, acc.id, amt, b.name);
   if (b.contributions) delete b.contributions[n];
+  if (b.contributionAccounts) delete b.contributionAccounts[n];
   if (b.skippedPeriods) delete b.skippedPeriods[n];
   const contribKeys = b.contributions ? Object.keys(b.contributions).map(Number) : [];
   const skipKeys = b.skippedPeriods ? Object.keys(b.skippedPeriods).map(Number) : [];
@@ -1580,7 +1653,7 @@ function confirmRestore(){
   if (!data) return;
   state.safeItems = data.safeItems || [];
   state.bankAccounts = data.bankAccounts || [];
-  state.budgets = (data.budgets || []).map(b => ({...b, type: b.type || 'goal', contributions: b.contributions || {}, skippedPeriods: b.skippedPeriods || {}, expenses: b.expenses || []}));
+  state.budgets = (data.budgets || []).map(b => ({...b, type: b.type || 'goal', contributions: b.contributions || {}, contributionAccounts: b.contributionAccounts || {}, skippedPeriods: b.skippedPeriods || {}, expenses: b.expenses || []}));
   state.subscriptions = (data.subscriptions || []).map(s => {
       const due = s.dueDate ? new Date(s.dueDate + 'T00:00:00') : null;
       const billing = s.billing || s.renewalType || 'Monthly';
@@ -2560,10 +2633,18 @@ function renderBudgetCard(b, idx){
     ? `<div class="bubble-done-note">${isGoal ? `All ${periodWord}s checked off` : `You're all set for this ${periodWord}`}</div>`
     : `<div class="bubble-row">${visibleBubbles.map(n => `<button class="bubble${n===b.paidThrough+1?' next':''}" onclick="startMarkPeriod('${b.id}',${n})" title="Log what you put in for ${periodLabel(b,n)}">${periodLabel(b,n)}</button>`).join('')}</div>`;
 
+  const fundingAccts = isEditingThisBudget ? fundingAccounts() : [];
+  const accountPicker = isEditingThisBudget && fundingAccts.length > 0 ? `
+      <div class="notes-label" style="margin-top:9px;">TAKE FROM</div>
+      <select class="add-input" id="periodAccount" onchange="setMarkPeriodAccount(this.value)">
+        ${fundingAccts.map(a => `<option value="${a.accScope}|${a.id}" ${state.editingPeriod.accScope===a.accScope && state.editingPeriod.accId===a.id ? 'selected' : ''}>${escapeHtml(a.name)} (${fmt(a.amount)})</option>`).join('')}
+      </select>` : (isEditingThisBudget ? `<p class="empty-note" style="padding:6px 0;">No accounts yet — this will just add to the goal without pulling from anywhere.</p>` : '');
+
   const periodEntryForm = isEditingThisBudget ? `
     <div class="budget-form" style="padding:0; border:none; margin-top:6px;">
       <div class="bubble-label" style="margin-bottom:6px;">How much did you put in for ${periodLabel(b, state.editingPeriod.n)}?</div>
       <input class="add-input" id="periodAmount" inputmode="decimal" value="${state.editingPeriod.value}" oninput="state.editingPeriod.value=this.value" onkeydown="if(event.key==='Enter'){commitMarkPeriod()}" />
+      ${accountPicker}
       <div class="budget-form-actions">
         <button class="icon-btn" style="color:#3f7a5c" onclick="commitMarkPeriod()">${iconSvg('check')}</button>
         <button class="backup-link" style="margin:0 6px;" onclick="skipMarkedPeriod()" title="Missed this ${periodWord}? Skip it without logging an amount.">Skip</button>
@@ -2578,9 +2659,15 @@ function renderBudgetCard(b, idx){
       ${isEditingThisBudget ? periodEntryForm : bubbleRow}
     </div>` : '';
 
+  const contributionAccountsObj = b.contributionAccounts || {};
   const logEntries = [];
   for (let n = 1; n <= b.paidThrough; n++){
-    if (contributionsObj[n] !== undefined) logEntries.push({n, text: fmt(contributionsObj[n]), skipped:false});
+    if (contributionsObj[n] !== undefined){
+      const acc = contributionAccountsObj[n];
+      const accItem = acc ? findAccount(acc.scope, acc.id) : null;
+      const fromText = accItem ? ` · from ${escapeHtml(accItem.name)}` : '';
+      logEntries.push({n, text: fmt(contributionsObj[n]) + fromText, skipped:false});
+    }
     else if (skippedObj[n]) logEntries.push({n, text: 'Skipped', skipped:true});
   }
   const logsSection = logsOpen ? `
