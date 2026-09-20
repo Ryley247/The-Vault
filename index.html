@@ -1454,7 +1454,6 @@ function load(){
     const changedLedgerScopes = normalizeLedgerScopes();
     if (changedLedgerScopes) save();
   } catch(e){
-    loadedFromScratch = true;
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
     state.budgets = [];
@@ -1556,117 +1555,11 @@ function save(){
     const payload = JSON.stringify(buildPayload());
     localStorage.setItem(STORAGE_KEY, payload);
     autoSnapshot(payload);
-    mirrorToDurable(payload);
     showSaved();
   } catch(e){
     console.error('Save failed', e);
-    // Even if localStorage refused the write, try to keep the second copy fresh.
-    try{ mirrorToDurable(JSON.stringify(buildPayload())); }catch(_){}
     alert("Couldn't save your change. Your browser storage may be full or private-browsing is blocking it.");
   }
-}
-
-/* ---------- durable second copy ----------
-   Every save is also written to IndexedDB, and the browser is asked to treat
-   this app's storage as "persistent" (exempt from automatic clean-up). If the
-   primary copy in localStorage ever comes back empty while the second copy
-   survives, the app restores itself on launch instead of starting from the
-   built-in defaults. */
-const DURABLE_DB = 'vault-durable';
-const DURABLE_STORE = 'kv';
-let durableReady = false;          // false until the launch-time recovery check finishes
-let loadedFromScratch = false;     // set by load() when it had to fall back to defaults
-let durablePersisted = null;       // true / false / null (unknown)
-let durableLastAt = null;
-function idbOpen(){
-  return new Promise((resolve, reject) => {
-    if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
-    const req = indexedDB.open(DURABLE_DB, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(DURABLE_STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function idbGet(key){
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const r = db.transaction(DURABLE_STORE, 'readonly').objectStore(DURABLE_STORE).get(key);
-    r.onsuccess = () => { db.close(); resolve(r.result); };
-    r.onerror = () => { db.close(); reject(r.error); };
-  });
-}
-async function idbSet(key, value){
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DURABLE_STORE, 'readwrite');
-    tx.objectStore(DURABLE_STORE).put(value, key);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-    tx.onabort = () => { db.close(); reject(tx.error); };
-  });
-}
-let mirrorQueued = null;
-function mirrorToDurable(payload){
-  // Never let a freshly-seeded default state overwrite the second copy before
-  // the launch-time recovery check has had a chance to run.
-  if (!durableReady) return;
-  mirrorQueued = payload;
-  if (mirrorToDurable.busy) return;
-  mirrorToDurable.busy = true;
-  (async () => {
-    try{
-      while (mirrorQueued){
-        const data = mirrorQueued; mirrorQueued = null;
-        const at = Date.now();
-        await idbSet('latest', { at, data });
-        durableLastAt = at;
-      }
-    } catch(e){ /* best-effort */ }
-    mirrorToDurable.busy = false;
-  })();
-}
-function showToastText(text, ms=3500){
-  const t = document.getElementById('saveToast');
-  if (!t) return;
-  const prev = t.textContent;
-  t.textContent = text;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>{ t.textContent = prev; }, 400); }, ms);
-}
-async function initDurable(){
-  try{
-    if (navigator.storage && navigator.storage.persist){
-      durablePersisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
-    }
-  } catch(e){}
-  try{
-    if (loadedFromScratch){
-      const rec = await idbGet('latest');
-      if (rec && typeof rec.data === 'string'){
-        const parsed = JSON.parse(rec.data);           // make sure it is readable
-        if (parsed && typeof parsed === 'object'){
-          localStorage.setItem(STORAGE_KEY, rec.data);
-          loadedFromScratch = false;
-          load();
-          durableReady = true;
-          durableLastAt = rec.at || null;
-          render();
-          showToastText('Your data was restored automatically');
-          return;
-        }
-      }
-    }
-  } catch(e){ console.warn('Durable recovery skipped', e); }
-  durableReady = true;
-  try{ mirrorToDurable(JSON.stringify(buildPayload())); }catch(e){}
-}
-function durableStatusLine(){
-  const store = durablePersisted === true ? 'Protected storage on'
-              : durablePersisted === false ? 'Not marked persistent by the browser'
-              : 'Storage protection unknown';
-  const when = durableLastAt ? ` · second copy ${relativeTimeLabel(durableLastAt)}` : '';
-  return `Auto-saves after every change · ${store}${when}`;
 }
 
 /* ---------- undo ---------- */
@@ -3198,7 +3091,6 @@ function renderSettings(){
         <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>
       <div class="panel-sub" style="color:${backupColor}; margin:-6px 2px 14px; padding-left:50px;">${backupNote}</div>
-      <div class="panel-sub" style="margin:-8px 2px 14px; padding-left:50px; opacity:.85;">${durableStatusLine()}</div>
       <button class="panel-btn" onclick="document.getElementById('restoreFile').click()">
         <div class="panel-icon" style="background:rgba(var(--brass-rgb),.13); color:var(--brass);">${iconSvg('upload')}</div>
         <div class="panel-body">
@@ -4778,7 +4670,7 @@ function render(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.modal)closeModal()});
 load();
 render();
-initDurable();
+try{ if (window.indexedDB) indexedDB.deleteDatabase('vault-durable'); }catch(e){}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
