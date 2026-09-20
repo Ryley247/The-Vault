@@ -809,11 +809,439 @@ button,input,select,textarea{outline:none;}
   .tab-btn .tab-label{font-size:9.5px;}
 }
 </style>
+
+<style id="vault-liquid-glass-v2">
+:root{
+  --glass-bg:rgba(28,30,36,.54);
+  --glass-bg-strong:rgba(31,33,40,.68);
+  --glass-border:rgba(255,255,255,.13);
+  --glass-border-hi:rgba(255,255,255,.20);
+  --glass-blur:blur(26px) saturate(155%);
+}
+html,body{
+  background:
+    radial-gradient(700px 430px at 50% -100px,rgba(var(--g-glow),.10),transparent 68%),
+    #08090b;
+}
+#app{
+  background:radial-gradient(420px 320px at 50% 0%,rgba(var(--g-glow),.045),transparent 72%);
+}
+.panel-btn,.row,.budget-card,.sub-row,.chart-card,.keypad-btn,.ledger-toggle,
+.select-bar,.area-toggle,.area-menu,.budget-form,.modal,.reminder-card,
+.goal-progress-card,.add-input,.row-input{
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.018) 42%,rgba(0,0,0,.12)),
+    var(--glass-bg);
+  border:1px solid var(--glass-border);
+  box-shadow:0 18px 55px rgba(0,0,0,.30),0 2px 0 rgba(255,255,255,.055) inset;
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+}
+.panel-btn,.row,.budget-card,.sub-row,.chart-card,.reminder-card,.goal-progress-card{
+  border-radius:22px;
+}
+.panel-btn,.row,.budget-card,.sub-row,.chart-card,.modal{
+  position:relative;
+  overflow:hidden;
+}
+.panel-btn::after,.row::after,.budget-card::after,.sub-row::after,.chart-card::after,.modal::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055);
+}
+@media(hover:hover){
+  .panel-btn:hover,.row:hover,.budget-card:hover,.sub-row:hover,.chart-card:hover{
+    border-color:var(--glass-border-hi);
+    background:
+      linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.022) 42%,rgba(0,0,0,.12)),
+      var(--glass-bg-strong);
+  }
+}
+.panel-btn:active,.row:active,.budget-card:active,.sub-row:active{transform:scale(.992)}
+.home-title{margin-top:18px;font-size:27px;font-weight:700;letter-spacing:-.045em}
+.home-sub{margin-top:5px;font-size:12px}
+.net-worth-wrap{
+  margin:8px auto 22px;padding:8px 4px 4px;
+  background:transparent; border:0; box-shadow:none;
+  position:relative;
+}
+.net-worth-wrap::before{
+  content:"";position:absolute;left:50%;top:50%;width:150px;height:58px;
+  transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(var(--g-glow),.10),transparent 70%);
+  filter:blur(12px);opacity:.8;
+}
+.net-worth{position:relative;z-index:1;}
+.net-worth{font-size:32px;letter-spacing:-.055em;line-height:1.1}
+.dial-wrap{width:86px;height:86px;margin-bottom:9px}
+.dial{
+  border-width:2px;border-color:rgba(var(--g-glow),.68);
+  background:radial-gradient(circle at 32% 25%,rgba(255,255,255,.16),transparent 20%),
+             radial-gradient(circle at 35% 30%,#30333a,#0c0d10 72%);
+  box-shadow:inset 0 0 24px rgba(0,0,0,.72),0 0 0 7px rgba(255,255,255,.025),0 14px 35px rgba(0,0,0,.35);
+}
+/* ---------- Fluid page + navigation motion ---------- */
+.tab-bar{position:relative;}
+.tab-active-indicator{
+  position:absolute; z-index:0; pointer-events:none;
+  left:7px; top:7px; width:0; height:56px;
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(var(--g-hi),.13),transparent 58%),
+    linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.025)),
+    rgba(var(--g-glow),.045);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 8px 28px rgba(var(--g-glow),.08);
+  transform:translateX(0) scaleX(1);
+  opacity:0;
+  transition:transform .58s cubic-bezier(.22,1,.36,1),width .38s cubic-bezier(.22,1,.36,1),opacity .2s ease;
+  will-change:transform,width;
+}
+.tab-btn{position:relative;z-index:1;transition:color .35s ease,transform .35s cubic-bezier(.22,1,.36,1);}
+.tab-btn.active{transform:translateY(-1px);}
+.tab-btn:not(.active):active{transform:scale(.96);}
+.tab-vault-icon{transition:transform .52s cubic-bezier(.22,1,.36,1),box-shadow .4s ease,border-radius .4s ease;}
+#tabVault.active .tab-vault-icon{transform:scale(1.045);box-shadow:0 4px 18px rgba(var(--g-glow),.32),inset 0 1px 0 rgba(255,255,255,.28);}
+.tab-ripple{z-index:3;}
+
+/* The page feels like one continuous surface instead of hard-swapping screens. */
+#app.page-enter-forward{animation:vaultPageInForward .48s cubic-bezier(.22,1,.36,1) both;}
+#app.page-enter-back{animation:vaultPageInBack .48s cubic-bezier(.22,1,.36,1) both;}
+@keyframes vaultPageInForward{
+  0%{opacity:0;transform:translate3d(24px,0,0) scale(.988);filter:blur(7px);}
+  45%{opacity:1;filter:blur(1px);}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0);}
+}
+@keyframes vaultPageInBack{
+  0%{opacity:0;transform:translate3d(-24px,0,0) scale(.988);filter:blur(7px);}
+  45%{opacity:1;filter:blur(1px);}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0);}
+}
+@media (prefers-reduced-motion:reduce){
+  .tab-active-indicator,.tab-btn,.tab-vault-icon{transition:none!important;}
+  #app.page-enter-forward,#app.page-enter-back{animation:none!important;}
+}
+
+.tab-bar{
+  left:50%;right:auto;bottom:max(12px,env(safe-area-inset-bottom));
+  width:min(500px,calc(100% - 24px));transform:translateX(-50%);
+  min-height:70px;padding:7px;gap:4px;align-items:center;
+  border:1px solid rgba(255,255,255,.15);border-radius:25px;
+  background:linear-gradient(180deg,rgba(48,50,58,.62),rgba(10,11,14,.78)),rgba(20,21,25,.64);
+  -webkit-backdrop-filter:blur(32px) saturate(175%);
+  backdrop-filter:blur(32px) saturate(175%);
+  box-shadow:0 22px 65px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.08) inset,0 0 0 1px rgba(0,0,0,.28);
+}
+.tab-btn{min-height:56px;border-radius:18px}
+.tab-btn.active::before{
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.025)),rgba(var(--g-glow),.035);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 25px rgba(var(--g-glow),.055);
+}
+#tabVault .tab-vault-icon{width:48px;height:48px;border-radius:16px}
+.add-input,.row-input,.ledger-search input,.notes-box,.sub-notes-input{
+  background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.add-input:focus,.row-input:focus,.ledger-search input:focus,.notes-box:focus,.sub-notes-input:focus{
+  border-color:rgba(var(--g-glow),.72);
+  box-shadow:0 0 0 4px rgba(var(--g-glow),.09),inset 0 1px 0 rgba(255,255,255,.055);
+}
+.filter-chip,.range-tab,.chip-btn{
+  background:rgba(255,255,255,.035);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  border-color:rgba(255,255,255,.11);
+}
+.modal-backdrop{
+  background:rgba(0,0,0,.48);
+  -webkit-backdrop-filter:blur(18px) saturate(120%);
+  backdrop-filter:blur(18px) saturate(120%);
+}
+.modal{
+  background:linear-gradient(135deg,rgba(46,48,56,.76),rgba(13,14,18,.84)),rgba(25,26,31,.74);
+  border-color:rgba(255,255,255,.15);border-radius:27px;
+  box-shadow:0 35px 100px rgba(0,0,0,.62),0 2px 0 rgba(255,255,255,.08) inset;
+  -webkit-backdrop-filter:blur(34px) saturate(160%);
+  backdrop-filter:blur(34px) saturate(160%);
+}
+.add-row{
+  background:rgba(var(--g-glow),.035);
+  border:1px dashed rgba(var(--g-glow),.48);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.tx-item,.snapshot-card,.sub-details,.budget-details,.deleted-actions{
+  border-color:rgba(255,255,255,.065);
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+}
+@media(min-width:700px){
+  #app{max-width:620px}
+  .content{padding-left:24px;padding-right:24px}
+  .tab-bar{width:min(540px,calc(100% - 48px))}
+}
+
+
+/* ---------- Final Liquid Glass navigation correction ---------- */
+/* Keep the navigation truly fixed to the viewport. */
+.tab-bar{
+  position:fixed !important;
+  left:50% !important;
+  right:auto !important;
+  bottom:max(12px, env(safe-area-inset-bottom)) !important;
+  width:min(500px, calc(100vw - 24px)) !important;
+  max-width:calc(100vw - 24px) !important;
+  height:70px;
+  min-height:70px;
+  box-sizing:border-box;
+  transform:translateX(-50%) !important;
+  z-index:60;
+  overflow:visible;
+}
+
+/* There is ONE selection surface: the moving indicator. */
+.tab-btn.active::before{display:none !important;}
+.tab-active-indicator{
+  left:0 !important;
+  top:50% !important;
+  margin-top:-24px !important;
+  width:0;
+  height:56px;
+  border-radius:18px;
+  opacity:0;
+  transform:translate3d(0,0,0);
+  transition:
+    transform .58s cubic-bezier(.16,1,.3,1),
+    width .38s cubic-bezier(.16,1,.3,1),
+    height .25s ease,
+    opacity .16s ease;
+  will-change:transform,width;
+}
+.tab-btn{z-index:1;}
+.tab-btn.active{transform:translateY(0) !important;}
+
+/* The center Vault button remains the visual focal point, not a second selection bubble. */
+#tabVault{flex:0 0 78px;}
+#tabVault .tab-vault-icon{position:relative;z-index:2;}
+
+/* Clean net-worth presentation: no container/bubble around the number. */
+.net-worth-wrap{
+  width:auto !important;
+  max-width:none !important;
+  margin:8px auto 22px !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+.net-worth-wrap::before{display:none !important;}
+.net-worth{
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  filter:none !important;
+}
+
+/* Keep the page transition understated so navigation is the star. */
+#app.page-enter-forward{animation:vaultPageInForward .34s cubic-bezier(.22,1,.36,1) both;}
+#app.page-enter-back{animation:vaultPageInBack .34s cubic-bezier(.22,1,.36,1) both;}
+@keyframes vaultPageInForward{
+  0%{opacity:0;transform:translate3d(14px,0,0);filter:blur(3px);}
+  100%{opacity:1;transform:translate3d(0,0,0);filter:blur(0);}
+}
+@keyframes vaultPageInBack{
+  0%{opacity:0;transform:translate3d(-14px,0,0);filter:blur(3px);}
+  100%{opacity:1;transform:translate3d(0,0,0);filter:blur(0);}
+}
+
+@media (max-width:699px){
+  .tab-bar{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    bottom:max(8px, env(safe-area-inset-bottom)) !important;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  .tab-active-indicator,#app.page-enter-forward,#app.page-enter-back{transition:none!important;animation:none!important;}
+}
+
+/* ---------- v5 corrections ---------- */
+/* Keep the Vault lock clearly above its label instead of dropping into it. */
+#tabVault .tab-vault-icon{transform:translateY(-14px) !important;}
+#tabVault.active .tab-vault-icon{transform:translateY(-18px) scale(1.04) !important;}
+#tabVault .tab-label{position:relative; z-index:2; margin-top:-8px;}
+
+/* Restore the net-worth text after removing its container/bubble. */
+.net-worth{
+  background-image:var(--gold-metal-bright) !important;
+  background-size:220% 100% !important;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+  filter:drop-shadow(0 0 8px rgba(var(--g-glow),.10)) !important;
+}
+</style>
+
+
+
+
+
+<style id="vault-navigation-clean-v12">
+/* Clean navigation: use the existing HTML only. No generated Vault label. */
+#tabVault .tab-label,
+#tabVault .tab-label::before,
+#tabVault .tab-label::after,
+#tabVault::before,
+#tabVault::after{
+  content:none !important;
+}
+#tabVault .tab-label{
+  display:block !important;
+  position:static !important;
+  transform:none !important;
+  margin:0 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  text-shadow:none !important;
+}
+#tabVault .tab-vault-icon{
+  transform:none !important;
+  transition:transform .36s cubic-bezier(.22,1,.36,1), box-shadow .36s ease !important;
+}
+#tabVault.active .tab-vault-icon{
+  transform:translateY(-6px) scale(1.045) !important;
+  filter:drop-shadow(0 0 9px rgba(var(--g-glow),.48)) !important;
+  box-shadow:0 0 24px rgba(var(--g-glow),.30), inset 0 1px 0 rgba(255,255,255,.28) !important;
+}
+#tabVault:not(.active) .tab-vault-icon{
+  filter:none !important;
+  box-shadow:0 2px 8px rgba(var(--g-glow),.20) !important;
+}
+/* Keep the bubble itself centered vertically and make its geometry come
+   from the real button bounds. */
+#tabActiveIndicator{
+  z-index:0 !important;
+  pointer-events:none !important;
+}
+/* Smooth module opening: no blur and no sideways slide. */
+#app.page-enter-forward,
+#app.page-enter-back{
+  animation:vaultCleanPageOpen .30s cubic-bezier(.22,1,.36,1) both !important;
+  filter:none !important;
+}
+@keyframes vaultCleanPageOpen{
+  from{opacity:0;transform:translateY(5px) scale(.994);filter:none}
+  to{opacity:1;transform:none;filter:none}
+}
+/* Do not freeze the original net-worth animation. */
+.net-worth{
+  filter:none;
+}
+</style>
+
+
+<style id="vault-final-v14">
+/* Final navigation geometry: wide rounded rectangles, never squares. */
+#tabActiveIndicator{
+  width:108px !important;
+  height:48px !important;
+  min-width:0 !important;
+  border-radius:16px !important;
+  left:0 !important;
+  top:50% !important;
+  margin-top:-24px !important;
+  box-sizing:border-box !important;
+  transform-origin:center center !important;
+  will-change:transform,width,opacity !important;
+}
+
+/* Keep the sparkle layer physically identical to the number's bounds. */
+.net-worth-wrap{
+  display:table !important;
+  width:max-content !important;
+  max-width:100% !important;
+  position:relative !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+  text-align:center !important;
+}
+.nw-sparkles{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  overflow:visible !important;
+  pointer-events:none !important;
+}
+
+/* Exact animation copied from the original amount treatment:
+   the metallic gradient itself travels across the digits. */
+.net-worth{
+  position:relative !important;
+  z-index:2 !important;
+  background-image:var(--gold-metal-bright) !important;
+  background-size:220% 100% !important;
+  /* Deliberately NOT !important: goldShimmer must be allowed to animate
+     background-position from the original 100% -> 0% -> 100% motion. */
+  background-position:100% 50%;
+  -webkit-background-clip:text !important;
+  background-clip:text !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+  animation:goldShimmer 3.2s ease-in-out infinite !important;
+  filter:drop-shadow(0 0 10px rgba(var(--g-glow),.35)) !important;
+}
+@keyframes goldShimmer{
+  0%{background-position:100% 50%;}
+  50%{background-position:0% 50%;}
+  100%{background-position:100% 50%;}
+}
+</style>
+<style id="vault-perf-v18">
+/* ---------- Performance pass (page switching) ----------
+   1. Every card had its own 26px backdrop blur. With a dozen cards on a page
+      that is a dozen blur passes per frame while the page fades in. Behind a
+      card there is only the flat page background, so the blur was invisible
+      anyway. Blur is kept where it is actually seen: the floating nav bar,
+      sheets and modals. */
+.panel-btn,.row,.budget-card,.sub-row,.chart-card,.keypad-btn,.ledger-toggle,
+.select-bar,.area-toggle,.area-menu,.budget-form,.reminder-card,
+.goal-progress-card,.add-input,.row-input,.filter-chip,.range-tab,.chip-btn{
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+
+/* 2. Lighter page-in: a short fade + tiny lift (no scale, no blur). */
+#app.page-enter-forward,
+#app.page-enter-back{
+  animation:vaultPageFast .2s ease-out both !important;
+}
+@keyframes vaultPageFast{
+  from{opacity:0;transform:translate3d(0,6px,0);}
+  to{opacity:1;transform:none;}
+}
+
+/* 3. The shimmer stays, but the drop-shadow filter on the moving gradient
+      forced the text to be re-blurred every frame. The glow now comes from a
+      static soft gradient behind the figure instead. */
+.net-worth{filter:none !important;}
+.net-worth-wrap::before{
+  display:block !important;
+  content:"" !important;
+  position:absolute;left:50%;top:50%;
+  width:130%;height:150%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(var(--g-glow),.16),transparent 68%);
+  z-index:0;
+}
+</style>
 </head>
 <body>
 <div id="app"></div>
 <button id="reorderDoneBtn" onclick="endReorderMode()" style="display:none; position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:70; background:var(--brass); color:#1a140d; font-weight:700; font-size:14px; letter-spacing:.02em; padding:12px 24px; border-radius:999px; box-shadow:0 10px 28px rgba(0,0,0,.45); border:none;">Done Reordering</button>
 <div class="tab-bar" id="tabBar">
+  <div class="tab-active-indicator" id="tabActiveIndicator" aria-hidden="true"></div>
   <button class="tab-btn" id="tabModules" onclick="navigate('modules')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     <span class="tab-label">Modules</span>
@@ -864,6 +1292,7 @@ function setVH(){ document.documentElement.style.setProperty('--vh', window.inne
 setVH();
 window.addEventListener('resize', setVH);
 window.addEventListener('orientationchange', setVH);
+window.addEventListener('resize', ()=>updateTabIndicator(pageTabFor(state.page), false));
 </script>
 <script>
 /* ---------- palette / helpers ---------- */
@@ -1025,6 +1454,7 @@ function load(){
     const changedLedgerScopes = normalizeLedgerScopes();
     if (changedLedgerScopes) save();
   } catch(e){
+    loadedFromScratch = true;
     state.safeItems = DEFAULT_SAFE;
     state.bankAccounts = [];
     state.budgets = [];
@@ -1039,32 +1469,27 @@ function load(){
 }
 
 function normalizeLedgerScopes(){
-  // Older versions logged savings goals as "Budget". Reclassify those entries
-  // when the current budget record confirms that the item is a goal.
-  const goalsByName = new Map(
-    state.budgets
-      .filter(b => b.type !== 'recurring' && b.type !== 'spending')
-      .map(b => [String(b.name), b])
-  );
+  // Legacy budget/goal records no longer belong in the Ledger. Older
+  // versions stored them as either "budget" or, after migration, "goal".
+  // Remove both forms completely, including deleted/trash copies.
   let changed = false;
+
   const beforeCount = (state.transactions || []).length;
-  state.transactions = (state.transactions || []).filter(t => t.scope !== 'subscription');
+  state.transactions = (state.transactions || []).filter(t =>
+    t.scope !== 'subscription' &&
+    t.scope !== 'budget' &&
+    t.scope !== 'goal'
+  );
   if (state.transactions.length !== beforeCount) changed = true;
-  (state.transactions || []).forEach(t => {
-    if (t.scope !== 'budget') return;
-    const loc = String(t.location || '');
-    let name = '';
-    if (loc.startsWith('Budget: Removed ')) name = loc.slice('Budget: Removed '.length);
-    else if (loc.startsWith('Budget: ')) name = loc.slice('Budget: '.length);
-    if (name && goalsByName.has(name)){
-      t.scope = 'goal';
-      t.location = loc.replace(/^Budget:/, 'Goals:');
-      changed = true;
-    }
-  });
+
   const beforeDeleted = (state.deletedTx || []).length;
-  state.deletedTx = (state.deletedTx || []).filter(t => t.scope !== 'subscription');
+  state.deletedTx = (state.deletedTx || []).filter(t =>
+    t.scope !== 'subscription' &&
+    t.scope !== 'budget' &&
+    t.scope !== 'goal'
+  );
   if (state.deletedTx.length !== beforeDeleted) changed = true;
+
   return changed;
 }
 
@@ -1114,24 +1539,134 @@ function restoreFromSnapshot(idx){
   }
 }
 
+function buildPayload(){
+  return {
+    version: SCHEMA_VERSION,
+    safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
+    subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
+    transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
+    moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
+    seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal,
+    onboardingDone: state.onboardingDone, categories: state.categories
+  };
+}
+
 function save(){
   try {
-    const payload = JSON.stringify({
-      version: SCHEMA_VERSION,
-      safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
-      subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
-      transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
-      moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder, safeOrder: state.safeOrder, bankOrder: state.bankOrder, subscriptionOrder: state.subscriptionOrder, liabilityOweOrder: state.liabilityOweOrder, liabilityOwedOrder: state.liabilityOwedOrder, jobOrder: state.jobOrder,
-      seenMilestones: state.seenMilestones, lastBackupAt: state.lastBackupAt, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal,
-      onboardingDone: state.onboardingDone, categories: state.categories
-    });
+    const payload = JSON.stringify(buildPayload());
     localStorage.setItem(STORAGE_KEY, payload);
     autoSnapshot(payload);
+    mirrorToDurable(payload);
     showSaved();
   } catch(e){
     console.error('Save failed', e);
+    // Even if localStorage refused the write, try to keep the second copy fresh.
+    try{ mirrorToDurable(JSON.stringify(buildPayload())); }catch(_){}
     alert("Couldn't save your change. Your browser storage may be full or private-browsing is blocking it.");
   }
+}
+
+/* ---------- durable second copy ----------
+   Every save is also written to IndexedDB, and the browser is asked to treat
+   this app's storage as "persistent" (exempt from automatic clean-up). If the
+   primary copy in localStorage ever comes back empty while the second copy
+   survives, the app restores itself on launch instead of starting from the
+   built-in defaults. */
+const DURABLE_DB = 'vault-durable';
+const DURABLE_STORE = 'kv';
+let durableReady = false;          // false until the launch-time recovery check finishes
+let loadedFromScratch = false;     // set by load() when it had to fall back to defaults
+let durablePersisted = null;       // true / false / null (unknown)
+let durableLastAt = null;
+function idbOpen(){
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+    const req = indexedDB.open(DURABLE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(DURABLE_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const r = db.transaction(DURABLE_STORE, 'readonly').objectStore(DURABLE_STORE).get(key);
+    r.onsuccess = () => { db.close(); resolve(r.result); };
+    r.onerror = () => { db.close(); reject(r.error); };
+  });
+}
+async function idbSet(key, value){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DURABLE_STORE, 'readwrite');
+    tx.objectStore(DURABLE_STORE).put(value, key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+    tx.onabort = () => { db.close(); reject(tx.error); };
+  });
+}
+let mirrorQueued = null;
+function mirrorToDurable(payload){
+  // Never let a freshly-seeded default state overwrite the second copy before
+  // the launch-time recovery check has had a chance to run.
+  if (!durableReady) return;
+  mirrorQueued = payload;
+  if (mirrorToDurable.busy) return;
+  mirrorToDurable.busy = true;
+  (async () => {
+    try{
+      while (mirrorQueued){
+        const data = mirrorQueued; mirrorQueued = null;
+        const at = Date.now();
+        await idbSet('latest', { at, data });
+        durableLastAt = at;
+      }
+    } catch(e){ /* best-effort */ }
+    mirrorToDurable.busy = false;
+  })();
+}
+function showToastText(text, ms=3500){
+  const t = document.getElementById('saveToast');
+  if (!t) return;
+  const prev = t.textContent;
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>{ t.textContent = prev; }, 400); }, ms);
+}
+async function initDurable(){
+  try{
+    if (navigator.storage && navigator.storage.persist){
+      durablePersisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+    }
+  } catch(e){}
+  try{
+    if (loadedFromScratch){
+      const rec = await idbGet('latest');
+      if (rec && typeof rec.data === 'string'){
+        const parsed = JSON.parse(rec.data);           // make sure it is readable
+        if (parsed && typeof parsed === 'object'){
+          localStorage.setItem(STORAGE_KEY, rec.data);
+          loadedFromScratch = false;
+          load();
+          durableReady = true;
+          durableLastAt = rec.at || null;
+          render();
+          showToastText('Your data was restored automatically');
+          return;
+        }
+      }
+    }
+  } catch(e){ console.warn('Durable recovery skipped', e); }
+  durableReady = true;
+  try{ mirrorToDurable(JSON.stringify(buildPayload())); }catch(e){}
+}
+function durableStatusLine(){
+  const store = durablePersisted === true ? 'Protected storage on'
+              : durablePersisted === false ? 'Not marked persistent by the browser'
+              : 'Storage protection unknown';
+  const when = durableLastAt ? ` · second copy ${relativeTimeLabel(durableLastAt)}` : '';
+  return `Auto-saves after every change · ${store}${when}`;
 }
 
 /* ---------- undo ---------- */
@@ -1690,14 +2225,7 @@ function toggleSubscriptionExpand(id){
 
 /* ---------- backup / restore ---------- */
 function exportBackup(){
-  const data = {
-    safeItems: state.safeItems, bankAccounts: state.bankAccounts, budgets: state.budgets,
-    subscriptions: state.subscriptions, liabilities: state.liabilities, jobs: state.jobs,
-    transactions: state.transactions, deletedTx: state.deletedTx, moneyOrder: state.moneyOrder, balancesOrder: state.balancesOrder,
-    moduleSectionOrder: state.moduleSectionOrder, budgetSectionOrder: state.budgetSectionOrder, budgetGoalOrder: state.budgetGoalOrder, budgetRecurringOrder: state.budgetRecurringOrder, budgetSpendingOrder: state.budgetSpendingOrder,
-    seenMilestones: state.seenMilestones, pin: state.pin, ledgerBaseTotal: state.ledgerBaseTotal,
-    exportedAt: new Date().toISOString()
-  };
+  const data = { ...buildPayload(), exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1872,9 +2400,115 @@ function cancelRestore(){
 }
 
 /* ---------- render ---------- */
+let pendingPageTransition = null;
+let lastNavTab = null;
+function pageTabFor(page){
+  const modulesPages = ['modules','budget','subscription','liability','income'];
+  const homePages = ['home','safe','bank'];
+  if (modulesPages.includes(page)) return 'tabModules';
+  if (homePages.includes(page)) return 'tabVault';
+  if (page === 'ledger') return 'tabLedger';
+  return null;
+}
 function navigate(page){
+  if (page === state.page) return;
   if (page === 'settings') state.settingsFrom = state.page;
+  const fromTab = pageTabFor(state.page);
+  const toTab = pageTabFor(page);
+  const order = ['tabModules','tabVault','tabLedger'];
+  const fromIndex = order.indexOf(fromTab);
+  const toIndex = order.indexOf(toTab);
+  pendingPageTransition = {
+    direction: (fromIndex >= 0 && toIndex >= 0 && toIndex < fromIndex) ? 'back' : 'forward',
+    fromTab, toTab
+  };
   state.page = page; state.editing = null; render(); window.scrollTo(0,0);
+}
+
+function updateTabIndicator(activeTab, animate=true, transition=null){
+  const bar=document.getElementById('tabBar');
+  const indicator=document.getElementById('tabActiveIndicator');
+  if(!bar || !indicator || bar.style.display==='none' || !activeTab){
+    if(indicator) indicator.style.opacity='0';
+    return;
+  }
+
+  const br=bar.getBoundingClientRect();
+  const btn=document.getElementById(activeTab);
+  const vaultBtn=document.getElementById('tabVault');
+  if(!btn || !vaultBtn){ indicator.style.opacity='0'; return; }
+
+  const bubbleH=48;
+  const targetWidth=108;
+  const centerY=(br.height-bubbleH)/2;
+
+  // The indicator is absolutely positioned against the bar's PADDING box
+  // (i.e. inside the 1px border), so measure everything from that same
+  // origin. Measuring from the outer border edge + padding (the old way)
+  // shifted the bubble ~6px left of the button it was meant to sit on.
+  const originX=br.left + (bar.clientLeft||0);
+
+  const geometry=(el)=>{
+    const r=el.getBoundingClientRect();
+    return {
+      centerX:(r.left + r.width/2) - originX,
+      width:targetWidth
+    };
+  };
+
+  const target=geometry(btn);
+  // Vault bubble target = the real center of the Vault button.
+  const vaultCenter=geometry(vaultBtn).centerX;
+  const xFor=(center,width)=>center-(width/2);
+
+  const place=(center,width=targetWidth,opacity=1)=>{
+    indicator.style.left='0px';
+    indicator.style.top=centerY+'px';
+    indicator.style.width=width+'px';
+    indicator.style.height=bubbleH+'px';
+    indicator.style.opacity=String(opacity);
+    indicator.style.transform=`translate3d(${xFor(center,width)}px,0,0)`;
+  };
+
+  // Vault has no resting bubble. When returning to Vault, the rectangular
+  // bubble travels to the actual center of the Vault button and fades there.
+  if(activeTab==='tabVault'){
+    if(animate && transition && transition.fromTab && transition.fromTab!=='tabVault'){
+      const from=document.getElementById(transition.fromTab);
+      if(from){
+        const fromG=geometry(from);
+        place(fromG.centerX,targetWidth,1);
+        indicator.style.transition='transform .58s cubic-bezier(.22,1,.36,1), opacity .34s ease';
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          indicator.style.transform=`translate3d(${xFor(vaultCenter,targetWidth)}px,0,0)`;
+          indicator.style.opacity='0';
+        }));
+        return;
+      }
+    }
+    indicator.style.transition='none';
+    indicator.style.opacity='0';
+    return;
+  }
+
+  // Leaving Vault: start as a clearly visible rounded rectangle at the
+  // actual Vault-button center, then travel to the destination.
+  if(animate && transition && transition.fromTab==='tabVault'){
+    const startWidth=82;
+    place(vaultCenter,startWidth,1);
+    indicator.style.transition='transform .58s cubic-bezier(.22,1,.36,1), width .42s cubic-bezier(.22,1,.36,1), opacity .12s ease';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      indicator.style.width=targetWidth+'px';
+      indicator.style.transform=`translate3d(${xFor(target.centerX,targetWidth)}px,0,0)`;
+      indicator.style.opacity='1';
+    }));
+    return;
+  }
+
+  place(target.centerX,targetWidth,1);
+  indicator.style.transition=animate
+    ? 'transform .46s cubic-bezier(.22,1,.36,1), opacity .18s ease'
+    : 'none';
 }
 
 function dialHTML(size){
@@ -2564,6 +3198,7 @@ function renderSettings(){
         <div class="panel-chevron">${iconSvg('chevronRight')}</div>
       </button>
       <div class="panel-sub" style="color:${backupColor}; margin:-6px 2px 14px; padding-left:50px;">${backupNote}</div>
+      <div class="panel-sub" style="margin:-8px 2px 14px; padding-left:50px; opacity:.85;">${durableStatusLine()}</div>
       <button class="panel-btn" onclick="document.getElementById('restoreFile').click()">
         <div class="panel-icon" style="background:rgba(var(--brass-rgb),.13); color:var(--brass);">${iconSvg('upload')}</div>
         <div class="panel-body">
@@ -3417,6 +4052,7 @@ function getFilteredTransactions(){
   // Synthetic opening balance follows the same date-range rules as everything else.
   // It only appears when the selected timeframe actually reaches back to the start.
   return state.transactions
+    .filter(t => t.scope !== 'goal' && t.scope !== 'budget' && t.scope !== 'subscription')
     .filter(inRange)
     .filter(t => t.synthetic || state.areaFilter[t.scope])
     .filter(matchesSearch);
@@ -3455,7 +4091,7 @@ function toggleAllAreas(){
 }
 
 function areaFullLabel(a){
-  return a==='safe'?'Safe':a==='bank'?'Accounts':a==='liability'?'Liability':'Goals';
+  return a==='safe'?'Safe':a==='bank'?'Accounts':'Liability';
 }
 
 function projectionRatePerDay(){
@@ -3574,7 +4210,7 @@ function renderLedger(){
   const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date));
   const filtered=[...filteredAsc].reverse();
   const latest=filteredAsc.length?filteredAsc[filteredAsc.length-1]:null;
-  const areas=['safe','bank','liability','goal'];
+  const areas=['safe','bank','liability'];
   const activeAreas=areas.filter(a=>state.areaFilter[a]);
   const allAreasSelected=activeAreas.length===areas.length;
   const rangeTabs=[['1D','1D'],['1W','1W'],['1M','1M'],['1Y','1Y'],['All','all']].map(([label,key])=>`<button class="range-tab${state.ledgerRange===key?' active':''}" onclick="setLedgerRange('${key}')">${label}</button>`).join('');
@@ -4051,6 +4687,15 @@ function render(){
     if (btn) btn.classList.toggle('active', id === activeTab);
   });
 
+  const transition = pendingPageTransition;
+  pendingPageTransition = null;
+  app.classList.remove('page-enter-forward','page-enter-back');
+  if (transition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    void app.offsetWidth;
+    app.classList.add(transition.direction === 'back' ? 'page-enter-back' : 'page-enter-forward');
+  }
+  updateTabIndicator(activeTab, !!transition, transition);
+
   const doneBtn = document.getElementById('reorderDoneBtn');
   if (doneBtn) doneBtn.style.display = state.reorderMode ? 'block' : 'none';
 
@@ -4133,6 +4778,7 @@ function render(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.modal)closeModal()});
 load();
 render();
+initDurable();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
