@@ -961,7 +961,7 @@ function migrateRecurringBudgetsToAccounts(){
 }
 
 /* ---------- state ---------- */
-let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], categories: DEFAULT_CATEGORIES.slice(), editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, goal:true, budget:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false, onboardingDone:false };
+let state = { page:'home', safeItems:[], bankAccounts:[], budgets:[], subscriptions:[], liabilities:[], jobs:[], transactions:[], categories: DEFAULT_CATEGORIES.slice(), editing:null, editingPeriod:null, filter:'all', ledgerRange:'1M', areaFilter:{safe:true, bank:true, liability:true, goal:true}, areaDropdownOpen:false, expandedBudgets:{}, expandedLogs:{}, expandedSubscriptions:{}, expandedWeeks:{}, collapsedJobs:{}, editingJob:{}, moneyOrder:['safe','bank'], balancesOrder:['liability','income'], moduleSectionOrder:['planning','balances'], budgetSectionOrder:['goal','spending'], budgetGoalOrder:[], budgetRecurringOrder:[], budgetSpendingOrder:[], safeOrder:[], bankOrder:[], subscriptionOrder:[], liabilityOweOrder:[], liabilityOwedOrder:[], jobOrder:[], reorderMode:false, pendingRestore:null, modal:null, ledgerCollapsed:false, loggingExpense:null, editingLimit:null, seenMilestones:[], lastBackupAt:null, pin:null, locked:false, pinAttempt:'', pinSetupStep:null, pinSetupValue:'', pinError:false, pinSetupError:null, debtSort:'none', ledgerSelectMode:false, selectedTxIds:[], deletedTx:[], selectedDeletedTxIds:[], unlocking:false, ledgerBaseTotal:null, ledgerSearch:'', pinBypassMode:false, onboardingDone:false };
 
 function load(){
   try {
@@ -969,7 +969,15 @@ function load(){
     if (!raw) throw new Error('no data');
     const data = JSON.parse(raw);
     state.safeItems = data.safeItems || [];
-    state.bankAccounts = data.bankAccounts || [];
+    state.bankAccounts = (data.bankAccounts || []).map(a => {
+      const account = {...a, notes: a.notes || ''};
+      if (account.plan && !(Number(account.plan.monthlyTarget) > 0)) {
+        account.notes = account.notes || account.plan.notes || '';
+        delete account.plan;
+      }
+      return account;
+    });
+    delete data.areaFilter?.budget;
     state.budgets = (data.budgets || []).map(b => ({...b, type: b.type || 'goal', contributions: b.contributions || {}, contributionAccounts: b.contributionAccounts || {}, skippedPeriods: b.skippedPeriods || {}, expenses: b.expenses || []}));
     migrateRecurringBudgetsToAccounts();
     state.subscriptions = (data.subscriptions || []).map(s => {
@@ -2626,11 +2634,12 @@ function openAccountPlanSetup(accountId){
   const acc = state.bankAccounts.find(x=>x.id===accountId);
   if (!acc) return;
   const existing = acc.plan;
+  const existingNote = existing ? (existing.notes || '') : (acc.notes || '');
   openModal(existing ? 'Edit Monthly Plan' : 'Add a Monthly Plan', `<div class="budget-form">
     <p class="empty-note" style="text-align:left; padding:0 0 10px;">How much do you want to put into <b>${escapeHtml(acc.name)}</b> each month?</p>
     <input class="add-input" id="apAmount" placeholder="Amount each month" inputmode="decimal" value="${existing?existing.monthlyTarget:''}">
     <div class="notes-label">NOTES</div>
-    <textarea class="add-input notes-box" id="apNotes" placeholder="What is this account for?">${existing?escapeHtml(existing.notes||''):''}</textarea>
+    <textarea class="add-input notes-box" id="apNotes" placeholder="What is this account for?">${escapeHtml(existingNote)}</textarea>
     <div class="budget-form-actions">
       <button class="icon-btn" style="color:#3f7a5c" onclick="submitAccountPlanSetup('${accountId}')">${iconSvg('check')}</button>
       ${existing ? `<button class="icon-btn" style="color:#a3483f" onclick="removeAccountPlan('${accountId}')">${iconSvg('trash')}</button>` : ''}
@@ -2641,9 +2650,18 @@ function openAccountPlanSetup(accountId){
 function submitAccountPlanSetup(accountId){
   const acc = state.bankAccounts.find(x=>x.id===accountId);
   if (!acc) return;
-  const monthlyTarget = parseFloat(document.getElementById('apAmount').value);
+  const amountValue = document.getElementById('apAmount').value.trim();
   const notes = document.getElementById('apNotes').value.trim();
-  if (!(monthlyTarget>0)) return alert('Enter a monthly amount above $0.');
+  const monthlyTarget = amountValue === '' ? 0 : parseFloat(amountValue);
+  if (amountValue !== '' && !(monthlyTarget>0)) return alert('Enter a monthly amount above $0.');
+
+  // A blank amount means this is a note only — do NOT create a monthly plan.
+  if (amountValue === '') {
+    acc.notes = notes;
+    closeModal(); save();
+    return;
+  }
+
   if (!acc.plan){
     acc.plan = {type:'recurring', timeframe:'monthly', monthlyTarget, createdAt:new Date().toISOString().slice(0,10), paidThrough:0, contributions:{}, contributionAccounts:{}, skippedPeriods:{}, notes};
   } else {
@@ -2769,8 +2787,11 @@ function renderBankAccountRow(item, idx){
 
   const planFooter = item.plan
     ? renderAccountPlanWidget(item)
-    : `<div style="margin-top:6px;"><button class="sub-toggle" onclick="openAccountPlanSetup('${item.id}')">${iconSvg('clock')} Add a monthly plan</button></div>`;
-
+    : `<div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+        <button class="sub-toggle" onclick="openAccountPlanSetup('${item.id}')">${iconSvg('clock')} Add a monthly plan</button>
+        ${item.notes ? `<button class="expand-btn${state.expandedLogs[item.id]?' open':''}" onclick="state.expandedLogs['${item.id}']=!state.expandedLogs['${item.id}']; render();" aria-label="Toggle note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>` : ''}
+      </div>
+      ${item.notes && state.expandedLogs[item.id] ? `<div class="budget-details" style="margin-top:6px;"><div class="notes-label">NOTES</div><div class="sub-notes">${escapeHtml(item.notes)}</div></div>` : ''}`;
   return `<div class="row sortable-item" data-id="${item.id}" style="border-left:4px solid ${color}; flex-direction:column; align-items:stretch;">
     <div style="display:flex; align-items:center; justify-content:space-between;">
       <span class="row-label">${escapeHtml(item.name)}</span>
@@ -3434,7 +3455,7 @@ function toggleAllAreas(){
 }
 
 function areaFullLabel(a){
-  return a==='safe'?'Safe':a==='bank'?'Accounts':a==='liability'?'Liability':a==='goal'?'Goals':'Budget';
+  return a==='safe'?'Safe':a==='bank'?'Accounts':a==='liability'?'Liability':'Goals';
 }
 
 function projectionRatePerDay(){
@@ -3553,7 +3574,7 @@ function renderLedger(){
   const filteredAsc=getFilteredTransactions().sort((a,b)=>new Date(a.date)-new Date(b.date));
   const filtered=[...filteredAsc].reverse();
   const latest=filteredAsc.length?filteredAsc[filteredAsc.length-1]:null;
-  const areas=['safe','bank','liability','goal','budget'];
+  const areas=['safe','bank','liability','goal'];
   const activeAreas=areas.filter(a=>state.areaFilter[a]);
   const allAreasSelected=activeAreas.length===areas.length;
   const rangeTabs=[['1D','1D'],['1W','1W'],['1M','1M'],['1Y','1Y'],['All','all']].map(([label,key])=>`<button class="range-tab${state.ledgerRange===key?' active':''}" onclick="setLedgerRange('${key}')">${label}</button>`).join('');
