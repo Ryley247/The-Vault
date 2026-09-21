@@ -5029,7 +5029,11 @@ function emptyDeletedTx(){
 function drawChartIfNeeded(){
   const canvas = document.getElementById('netChart');
   if (!canvas) return;
-  if (typeof Chart === 'undefined') { console.error('Chart.js failed to load'); return; }
+  if (typeof Chart === 'undefined'){
+    // The chart library comes from a CDN. If it hasn't loaded (offline on a first visit), say so instead of leaving a blank box.
+    canvas.parentElement.innerHTML = '<p class="empty-note">The chart needs to load once while online. Reconnect and reopen the ledger.</p>';
+    return;
+  }
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   scrubIndex = null;
 
