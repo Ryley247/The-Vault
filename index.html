@@ -1028,7 +1028,7 @@ input[type=date].add-input, select.add-input{
 }
 .save-toast{
   position:fixed;
-  bottom:calc(78px + env(safe-area-inset-bottom));
+  bottom:var(--above-nav);
   left:50%;
   transform:translateX(-50%) translateY(20px);
   opacity:0;
@@ -1080,7 +1080,7 @@ input[type=date].add-input, select.add-input{
 }
 .undo-toast{
   position:fixed;
-  bottom:calc(78px + env(safe-area-inset-bottom));
+  bottom:var(--above-nav);
   left:50%;
   transform:translateX(-50%) translateY(20px);
   opacity:0;
@@ -1744,7 +1744,7 @@ button,input,select,textarea{
   --ink:#111214;
   --mat-filter:grayscale(.8) brightness(1.15) hue-rotate(180deg) saturate(1.3) contrast(1.05);
 }
-.tab-vault-icon, .bubble.next, .filter-chip.active, .range-tab.active, .save-toast, .milestone-toast{
+.tab-vault-icon, .bubble.next, .filter-chip.active, .range-tab.active, .save-toast, .milestone-toast, #reorderDoneBtn{
   background-image:var(--facet),
     repeating-linear-gradient(92deg,rgba(255,255,255,.055) 0 1px,rgba(0,0,0,.035) 1px 3px),
     radial-gradient(ellipse at 18% 0%,rgba(var(--g-hi),.62),transparent 28%),
@@ -1886,7 +1886,7 @@ button,input,select,textarea{
   box-shadow:inset 0 1px 0 rgba(var(--g-hi),.45),0 5px 16px rgba(var(--g-glow),.18);
 }
 @media(max-width:380px){
-  .tab-bar{width:calc(100% - 12px);bottom:max(6px,env(safe-area-inset-bottom));}
+  .tab-bar{width:calc(100% - 12px);}
   #tabVault{flex-basis:72px;}
   .tab-btn .tab-label{font-size:9.5px;}
 }
@@ -2066,11 +2066,11 @@ html,body{
 .tab-bar{
   position:fixed !important;
   left:50% !important;
-  bottom:max(12px, env(safe-area-inset-bottom)) !important;
+  bottom:var(--nav-bottom) !important;
   width:min(500px, calc(100vw - 24px)) !important;
   max-width:calc(100vw - 24px) !important;
-  height:70px;
-  min-height:70px;
+  height:var(--nav-h);
+  min-height:var(--nav-h);
   transform:translateX(-50%) !important;
   z-index:60;
 }
@@ -2105,7 +2105,6 @@ html,body{
   .tab-bar{
     width:calc(100vw - 20px) !important;
     max-width:calc(100vw - 20px) !important;
-    bottom:max(8px, env(safe-area-inset-bottom)) !important;
   }
 }
 @media (prefers-reduced-motion:reduce){
@@ -2197,6 +2196,9 @@ html,body{
 }
 :root{
   --nav-dur:.72s;
+  --nav-bottom:max(12px, env(safe-area-inset-bottom, 0px));   /* gap under the nav bar */
+  --nav-h:70px;
+  --above-nav:calc(var(--nav-bottom) + var(--nav-h) + 14px);   /* just above the nav bar: toasts and the Done Reordering button */
   --nav-ease:cubic-bezier(.45,0,.2,1);
 }
 .tab-btn{
@@ -2211,11 +2213,30 @@ html,body{
 #tabVault .tab-vault-icon{
   transition:transform var(--nav-dur) var(--nav-ease), box-shadow var(--nav-dur) ease, filter var(--nav-dur) ease;
 }
+@media (max-width:699px){
+  :root{ --nav-bottom:max(8px, env(safe-area-inset-bottom, 0px)); }
+}
+#reorderDoneBtn{
+  position:fixed;
+  left:50%;
+  bottom:var(--above-nav);
+  transform:translateX(-50%);
+  z-index:70;
+  padding:12px 24px;
+  border-radius:999px;
+  border:1px solid rgba(var(--g-hi),.72);
+  background-color:var(--brass);
+  color:var(--ink);
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:.02em;
+  box-shadow:0 10px 28px rgba(0,0,0,.45);
+}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<button id="reorderDoneBtn" onclick="endReorderMode()" style="display:none; position:fixed; left:50%; bottom:96px; transform:translateX(-50%); z-index:70; background:var(--brass); color:#1a140d; font-weight:700; font-size:14px; letter-spacing:.02em; padding:12px 24px; border-radius:999px; box-shadow:0 10px 28px rgba(0,0,0,.45); border:none;">Done Reordering</button>
+<button id="reorderDoneBtn" onclick="endReorderMode()" style="display:none;">Done Reordering</button>
 <div class="tab-bar" id="tabBar">
   <div class="tab-active-indicator" id="tabActiveIndicator" aria-hidden="true"></div>
   <button class="tab-btn" id="tabModules" onclick="navigate('modules')">
@@ -2538,7 +2559,10 @@ function showToast(text, ms=900){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=> t.classList.remove('show'), ms);
 }
-function showSaved(){ showToast('Saved'); }
+function showSaved(){
+  if (state.reorderMode) return;   // each drop saves; the single "Saved" comes after Done Reordering
+  showToast('Saved');
+}
 
 /* ---------- mutations ---------- */
 function getList(scope){
@@ -3789,6 +3813,7 @@ function renderModules(){
 function endReorderMode(){
   state.reorderMode = false;
   render();
+  showSaved();
 }
 
 function renderSettings(){
