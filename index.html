@@ -2232,6 +2232,18 @@ html,body{
   letter-spacing:.02em;
   box-shadow:0 10px 28px rgba(0,0,0,.45);
 }
+/* ===== VAULT NET-WORTH PANEL ===== */
+.vault-content{padding-top:0;padding-bottom:112px}
+.vault-topbar{padding-top:18px}
+.vault-status{font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--bone-dim);display:flex;align-items:center;gap:7px}
+.vault-status-dot{width:6px;height:6px;border-radius:50%;background:var(--brass);box-shadow:0 0 10px rgba(242,199,92,.55)}
+.vault-hero{position:relative;margin:14px 0 0;padding:22px 16px 17px;border:1px solid rgba(242,199,92,.22);border-radius:22px;background:radial-gradient(circle at 50% 0%,rgba(242,199,92,.10),transparent 48%),linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));box-shadow:0 18px 50px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.05);text-align:center;overflow:hidden}
+.vault-hero:after{content:"";position:absolute;inset:auto 12% -70px;height:120px;background:radial-gradient(ellipse,rgba(242,199,92,.10),transparent 65%);pointer-events:none}
+.vault-hero-label{font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.18em;color:var(--brass-dim)}
+.vault-hero .net-worth{font-size:clamp(34px,10vw,50px);margin:5px 0 3px;text-shadow:0 0 26px rgba(242,199,92,.11)}
+.vault-nw-change{font:700 11px 'JetBrains Mono',monospace;margin:2px 0 0}.vault-nw-change.positive{color:var(--ledger-green)}.vault-nw-change.negative{color:var(--rust)}.vault-nw-change span{font-weight:500;color:var(--bone-dim)}
+.vault-upcoming-wrap{margin-top:18px}
+@media (prefers-reduced-motion:no-preference){.vault-hero{animation:vaultHeroIn .45s ease-out both}@keyframes vaultHeroIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}}
 </style>
 </head>
 <body>
@@ -3695,12 +3707,12 @@ function renderHome(){
     const diff = nowNW - pastNW;
     const pct = pastNW !== 0 ? (diff/Math.abs(pastNW)*100) : null;
     const up = diff >= 0;
-    changeHTML = `<div style="text-align:center; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:${up?'#3f7a5c':'#a3483f'}; margin-bottom:14px;">${up?'▲':'▼'} ${fmt(Math.abs(diff))}${pct!==null?` (${up?'+':'-'}${Math.abs(pct).toFixed(1)}%)`:''} last 30 days</div>`;
+    changeHTML = `<div class="vault-nw-change ${up?'positive':'negative'}">${up?'▲':'▼'} ${fmt(Math.abs(diff))}${pct!==null?` (${up?'+':'-'}${Math.abs(pct).toFixed(1)}%)`:''} <span>last 30 days</span></div>`;
   }
 
   const moneyItems = {
     safe: `<button class="panel-btn no-select" data-key="safe" onclick="navigate('safe')">
-        <div class="panel-icon" style="background:#3f7a5c22; color:#3f7a5c;">${iconSvg('lock')}</div>
+        <div class="panel-icon" style="background:color-mix(in srgb, var(--success) 13%, transparent); color:var(--success);">${iconSvg('lock')}</div>
         <div class="panel-body">
           <div class="panel-title">The Safe</div>
           <div class="panel-sub">Physical cash &amp; coin</div>
@@ -3721,20 +3733,21 @@ function renderHome(){
   const moneyRows = state.moneyOrder.map(k => moneyItems[k] || '').join('');
 
   return `
-    <div class="root-topbar"><div></div><button class="gear-btn" onclick="navigate('settings')" aria-label="Settings">${iconSvg('gear')}</button></div>
-    <div class="content" style="padding-top:0;">
+    <div class="root-topbar vault-topbar"><div></div><button class="gear-btn" onclick="navigate('settings')" aria-label="Settings">${iconSvg('gear')}</button></div>
+    <div class="content vault-content">
       ${dialHTML(76)}
       <div class="home-title">THE VAULT</div>
-      <div class="home-sub">Net worth tracked</div>
-      <div class="net-worth-wrap">
-        <div class="net-worth nw-figure" id="netWorthFigure" data-value="${nowNW}">${fmt(nowNW)}</div>
-        <div class="nw-sparkles" id="nwSparkles" aria-hidden="true"></div>
-      </div>
-      ${changeHTML}
-      ${renderUpcomingCard()}
 
-      <div class="section-label">Money</div>
+      <section class="vault-hero">
+        <div class="vault-hero-label">NET WORTH</div>
+        <div class="net-worth-wrap"><div class="net-worth nw-figure" id="netWorthFigure" data-value="${nowNW}">${fmt(nowNW)}</div><div class="nw-sparkles" id="nwSparkles" aria-hidden="true"></div></div>
+        ${changeHTML}
+      </section>
+
+      <div class="section-label" style="margin-top:20px;">Money</div>
       <div id="moneyList">${moneyRows}</div>
+
+      <div class="vault-upcoming-wrap">${renderUpcomingCard()}</div>
     </div>`;
 }
 
@@ -3756,7 +3769,7 @@ function renderCashflowSnapshot(){
   const net = expected - subMo - goalMo;
   return `<div class="reminder-card">
     <div class="section-label" style="margin-bottom:4px;">Monthly cash flow</div>
-    <div class="cashflow-row"><span class="cashflow-label">Expected income</span><span class="cashflow-amt" style="color:#3f7a5c">+${fmt(expected)}</span></div>
+    <div class="cashflow-row"><span class="cashflow-label">Expected income</span><span class="cashflow-amt" style="color:var(--success)">+${fmt(expected)}</span></div>
     <div class="cashflow-row"><span class="cashflow-label">Monthly subscriptions</span><span class="cashflow-amt" style="color:#a3483f">−${fmt(subMo)}</span></div>
     <div class="cashflow-row"><span class="cashflow-label">Goal installments</span><span class="cashflow-amt" style="color:#a3483f">−${fmt(goalMo)}</span></div>
     <div class="cashflow-row"><span class="cashflow-label" style="font-weight:600;color:var(--bone)">Projected net</span><span class="cashflow-amt" style="color:${net>=0?'#3f7a5c':'#a3483f'}">${net>=0?'+':''}${fmt(net)}</span></div>
@@ -5468,3 +5481,36 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+<style id="vault-visual-consistency-fix">
+/* ==== Visual consistency pass ==== */
+:root{--success:#3f7a5c;}
+
+/* Keep the same typography family throughout the main UI. */
+body,
+button,input,select,textarea,
+.page-title,.home-title,.panel-title,.modal-title,.total-label,
+.section-label,.panel-sub,.panel-value,.home-sub,
+.vault-hero-label,.vault-nw-change{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;}
+
+/* Use one consistent positive/green accent across pages. */
+.vault-nw-change.positive{color:var(--success);}
+
+/* THE VAULT and the main net-worth figure share the same visual scale. */
+.home-title{font-size:32px;font-weight:700;letter-spacing:-.045em;line-height:1.1;}
+.vault-hero .net-worth{font-size:32px;line-height:1.1;}
+
+/* Net-worth panel follows the active theme instead of retaining gold. */
+.vault-hero{
+  border-color:rgba(var(--g-glow),.42);
+  background:
+    radial-gradient(circle at 50% 0%,rgba(var(--g-glow),.10),transparent 48%),
+    linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+}
+.vault-hero:after{background:radial-gradient(ellipse,rgba(var(--g-glow),.10),transparent 65%);}
+.vault-hero .net-worth{text-shadow:0 0 26px rgba(var(--g-glow),.11);}
+
+/* Keep labels/subtext restrained so the page doesn't feel over-scaled. */
+.vault-hero-label{font-size:10px;}
+.vault-nw-change{font-size:11px;}
+.section-label{font-size:12px;}
+</style>
